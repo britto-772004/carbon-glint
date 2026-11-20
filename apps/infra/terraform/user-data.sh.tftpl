@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# First-boot provisioning for the Carbon Glint VM (Ubuntu 24.04). Idempotent.
+set -euo pipefail
+exec > >(tee -a /var/log/carbon-glint-bootstrap.log) 2>&1
+
+APP_DIR=/opt/carbon-glint
+DEPLOY_USER=ubuntu
+
+# ── Swap: t3.micro has 1 GiB RAM ─────────────────────────────────────────────
+if ! swapon --show | grep -q /swapfile; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  grep -q /swapfile /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  sysctl -w vm.swappiness=10
+  echo 'vm.swappiness=10' > /etc/sysctl.d/99-swappiness.conf
+fi
+# Redis recommends overcommit for background saves.
+echo 'vm.overcommit_memory=1' > /etc/sysctl.d/99-redis.conf && sysctl -p /etc/sysctl.d/99-redis.conf
+
+# ── Docker Engine + compose plugin ───────────────────────────────────────────
+if ! command -v docker >/dev/null 2>&1; then
+  apt-get update -y
+  apt-get install -y ca-certificates curl
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  chmod a+r /etc/apt/keyrings/docker.asc
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    > /etc/apt/sources.list.d/docker.list
+  apt-get update -y
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+fi
+cat > /etc/docker/daemon.json <<'JSON'
+{ "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }
+JSON
+systemctl enable docker
+systemctl restart docker
+usermod -aG docker "$DEPLOY_USER"
+
+# ── App directory (CI copies compose files + .env here) ──────────────────────
+mkdir -p "$APP_DIR"/backups
+chown -R "$DEPLOY_USER":"$DEPLOY_USER" "$APP_DIR"
+
+# ── Unattended security updates ──────────────────────────────────────────────
+apt-get install -y unattended-upgrades
+dpkg-reconfigure -f noninteractive unattended-upgrades
+
+# ── Nightly Postgres backup (local + S3 if configured) ───────────────────────
+cat > /etc/systemd/system/carbon-glint-backup.service <<UNIT
+[Unit]
+Description=Carbon Glint Postgres backup
+After=docker.service
+
+[Service]
+Type=oneshot
+User=$DEPLOY_USER
+WorkingDirectory=$APP_DIR
+Environment=BACKUP_BUCKET=${backup_bucket}
+Environment=AWS_REGION=${region}
+ExecStart=/bin/bash $APP_DIR/backup.sh
+UNIT
+
+cat > /etc/systemd/system/carbon-glint-backup.timer <<'UNIT'
+[Unit]
+Description=Nightly Carbon Glint Postgres backup
+
+[Timer]
+OnCalendar=*-*-* 20:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now carbon-glint-backup.timer
+echo "bootstrap complete"
