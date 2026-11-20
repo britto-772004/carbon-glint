@@ -1,5 +1,6 @@
 import type { ChartSpec } from '@carbon-glint/sdk';
-import ReactECharts from 'echarts-for-react';
+import ReactECharts from 'echarts-for-react/lib/core';
+import { echarts } from '../../lib/echarts';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -95,7 +96,7 @@ export function ChatChart({
           </TableBody>
         </Table>
       ) : (
-        <ReactECharts option={option} notMerge style={{ height: 260 }} />
+        <ReactECharts echarts={echarts} option={option} notMerge style={{ height: 260 }} />
       )}
     </Box>
   );

@@ -99,6 +99,11 @@ export default tseslint.config(
     },
   },
   {
+    // Route table: defines lazy page components by design.
+    files: ['apps/web/src/routes.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     // Containers: state + SDK calls only. They render exactly one component and no markup.
     files: ['apps/web/src/containers/**/*.tsx'],
     ignores: ['**/*.test.tsx'],

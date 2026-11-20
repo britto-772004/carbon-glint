@@ -46,6 +46,12 @@ SQL
 log "Running migrations"
 (cd "$RELEASE_DIR/api" && node --env-file="$APP_DIR/shared/.env" dist/migrate.js)
 
+# ── 3b. Emission factor library (first deploy only; idempotent) ──────────────────
+log "Ensuring emission factor library"
+(cd "$RELEASE_DIR/api" && node --env-file="$APP_DIR/shared/.env" dist/import-factors.js defra --year "$(date -u +%Y)" --skip-if-present) \
+  || (cd "$RELEASE_DIR/api" && node --env-file="$APP_DIR/shared/.env" dist/import-factors.js defra --year "$(( $(date -u +%Y) - 1 ))" --skip-if-present) \
+  || echo "⚠ Could not load DEFRA factors (network?) — run import-factors manually later."
+
 # ── 4. Switch release + restart processes ────────────────────────────────────────
 log "Activating release"
 ln -sfn "$RELEASE_DIR" "$APP_DIR/current"

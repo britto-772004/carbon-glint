@@ -1,5 +1,6 @@
 import type { Heatmap } from '@carbon-glint/sdk';
-import ReactECharts from 'echarts-for-react';
+import ReactECharts from 'echarts-for-react/lib/core';
+import { echarts } from '../../lib/echarts';
 import Box from '@mui/material/Box';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
@@ -190,6 +191,7 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
         ) : (
           <>
             <ReactECharts
+              echarts={echarts}
               option={option}
               notMerge
               style={{ height: Math.max(220, rows.length * 34 + 90), width: '100%' }}

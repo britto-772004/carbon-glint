@@ -1,5 +1,6 @@
 import type { Heatmap } from '@carbon-glint/sdk';
-import ReactECharts from 'echarts-for-react';
+import ReactECharts from 'echarts-for-react/lib/core';
+import { echarts } from '../../lib/echarts';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Skeleton from '@mui/material/Skeleton';
@@ -24,6 +25,7 @@ export function ScopeTrendChart({ data, isLoading }: { data?: Heatmap; isLoading
           </Typography>
         ) : (
           <ReactECharts
+            echarts={echarts}
             style={{ height: 280 }}
             notMerge
             option={{

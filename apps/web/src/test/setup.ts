@@ -8,9 +8,11 @@ import { resetSession } from './mocks/session';
 import { TEST_API_BASE_URL } from './constants';
 
 // ECharts needs a real canvas; tests use the accessible table views instead.
-vi.mock('echarts-for-react', () => ({
+vi.mock('echarts-for-react/lib/core', () => ({
   default: (props: { style?: object }) => createElement('div', { 'data-testid': 'echarts', style: props.style }),
 }));
+
+vi.mock('../lib/echarts', () => ({ echarts: {} }));
 
 // jsdom lacks these; React Flow needs them.
 class ResizeObserverStub {

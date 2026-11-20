@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { changePasswordMutation, getMeQueryKey, logOutMutation, type Me } from '@carbon-glint/sdk';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { AppShell } from '../../components/shell/AppShell';
-import { AssistantLauncherContainer } from '../assistant/AssistantLauncherContainer';
 import { PLATFORM_TABS, TENANT_TABS } from './tabs';
+
+/** The assistant (ECharts + markdown) loads after the shell renders. */
 import { toErrorMessage } from '../../lib/errors';
 import { useMe } from '../session/useMe';
+
+/** The assistant (ECharts + markdown) loads after the shell renders. */
+const AssistantLauncherContainer = lazy(() =>
+  import('../assistant/AssistantLauncherContainer').then((m) => ({ default: m.AssistantLauncherContainer })),
+);
 
 /** Signed-in chrome (tenant app or platform console): tabs, account menu, sign-out, change password. */
 export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) {
@@ -53,7 +59,11 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
       }}
       showTemporaryPasswordBanner={Boolean(me?.user.passwordIsTemporary)}
       floating={
-        variant === 'tenant' && !pathname.startsWith('/app/assistant') ? <AssistantLauncherContainer /> : undefined
+        variant === 'tenant' && !pathname.startsWith('/app/assistant') ? (
+          <Suspense fallback={null}>
+            <AssistantLauncherContainer />
+          </Suspense>
+        ) : undefined
       }
       changePassword={{
         open: dialogOpen,
