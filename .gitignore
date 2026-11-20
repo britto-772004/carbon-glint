@@ -16,3 +16,11 @@ firebase-debug.log*
 
 .DS_Store
 *.log
+
+# SSH keys / credentials — never commit
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+michael
+michael.pub

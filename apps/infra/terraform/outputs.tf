@@ -1,21 +1,17 @@
 output "public_ip" {
-  description = "Elastic IP — GitHub secret EC2_HOST."
-  value       = aws_eip.app.public_ip
+  description = "GitHub secret VM_HOST."
+  value       = google_compute_address.vm.address
 }
 
 output "ssh_user" {
-  description = "GitHub secret EC2_USER."
-  value       = "ubuntu"
+  description = "GitHub secret VM_USER."
+  value       = var.ssh_user
 }
 
 output "ssh_command" {
-  value = "ssh ubuntu@${aws_eip.app.public_ip}"
-}
-
-output "instance_id" {
-  value = aws_instance.app.id
+  value = "ssh ${var.ssh_user}@${google_compute_address.vm.address}"
 }
 
 output "backup_bucket" {
-  value = var.enable_s3_backups ? aws_s3_bucket.backups[0].bucket : null
+  value = google_storage_bucket.backups.name
 }

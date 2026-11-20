@@ -1,6 +1,5 @@
-region         = "ap-south-1"
+project_id     = "your-gcp-project-id"
 ssh_public_key = "ssh-ed25519 AAAA... carbon-glint-deploy"
-# instance_type     = "t3.micro"
-# ssh_allowed_cidrs = ["0.0.0.0/0"]
-# public_http       = false
-# enable_s3_backups = true
+# region      = "us-central1"
+# zone        = "us-central1-a"
+# public_http = false

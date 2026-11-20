@@ -1,56 +1,52 @@
-# Latest Ubuntu 24.04 LTS (amd64) published by Canonical.
-data "aws_ssm_parameter" "ubuntu" {
-  name = "/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id"
+data "google_compute_image" "ubuntu" {
+  family  = "ubuntu-2404-lts-amd64" # matches GitHub's ubuntu-24.04 runners (same glibc for native modules)
+  project = "ubuntu-os-cloud"
 }
 
-resource "aws_key_pair" "deploy" {
-  key_name   = "${var.name}-deploy"
-  public_key = var.ssh_public_key
-}
+resource "google_compute_instance" "vm" {
+  name                      = "${var.name}-vm"
+  machine_type              = var.machine_type
+  zone                      = var.zone
+  tags                      = ["${var.name}-vm"]
+  deletion_protection       = var.deletion_protection
+  allow_stopping_for_update = true
 
-resource "aws_instance" "app" {
-  ami                    = data.aws_ssm_parameter.ubuntu.value
-  instance_type          = var.instance_type
-  key_name               = aws_key_pair.deploy.key_name
-  vpc_security_group_ids = [aws_security_group.app.id]
-  iam_instance_profile   = var.enable_s3_backups ? aws_iam_instance_profile.vm[0].name : null
-
-  user_data = templatefile("${path.module}/user-data.sh.tftpl", {
-    backup_bucket = var.enable_s3_backups ? aws_s3_bucket.backups[0].bucket : ""
-    region        = var.region
-  })
-  user_data_replace_on_change = false
-
-  root_block_device {
-    volume_type           = "gp3"
-    volume_size           = var.root_volume_size_gb
-    encrypted             = true
-    delete_on_termination = false # keep the data if the instance is ever terminated
+  boot_disk {
+    auto_delete = false # keep the data (Postgres lives here) even if the instance is deleted
+    initialize_params {
+      image = data.google_compute_image.ubuntu.self_link
+      size  = var.disk_size_gb
+      type  = var.disk_type
+    }
   }
 
-  metadata_options {
-    http_tokens                 = "required" # IMDSv2 only
-    http_put_response_hop_limit = 2          # lets containers (aws-cli backup) reach instance credentials
+  network_interface {
+    network = var.network
+    access_config {
+      nat_ip = google_compute_address.vm.address
+    }
   }
 
-  credit_specification {
-    cpu_credits = "standard" # never bill for burst beyond credits
+  service_account {
+    email  = google_service_account.vm.email
+    scopes = ["cloud-platform"]
   }
 
-  tags = {
-    Name = "${var.name}-vm"
+  shielded_instance_config {
+    enable_secure_boot          = true
+    enable_vtpm                 = true
+    enable_integrity_monitoring = true
+  }
+
+  metadata = {
+    enable-oslogin = "FALSE"
+    ssh-keys       = "${var.ssh_user}:${var.ssh_public_key}"
+    backup-bucket  = google_storage_bucket.backups.name
+    # Runs on every boot; idempotent. Same script can be run by hand: sudo bash bootstrap-vm.sh
+    startup-script = file("${path.module}/../scripts/bootstrap-vm.sh")
   }
 
   lifecycle {
-    ignore_changes = [ami] # don't replace the box when Canonical publishes a new AMI
-  }
-}
-
-# Stable public IP for SSH deploys.
-resource "aws_eip" "app" {
-  instance = aws_instance.app.id
-  domain   = "vpc"
-  tags = {
-    Name = "${var.name}-ip"
+    ignore_changes = [boot_disk[0].initialize_params[0].image] # don't rebuild when Ubuntu publishes a new image
   }
 }
