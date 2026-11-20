@@ -1,7 +1,14 @@
 import { conversionFactor } from '../lib/units.js';
 import type { ActivityModel, NewCalculationModel } from '../models/index.js';
 import { countryNameOf } from '../lib/countries.js';
-import { chooseFactor, compatibleUnits, matchQuery, rerank, type MatchChoice } from './factor-matching.js';
+import {
+  chooseFactor,
+  compatibleUnits,
+  matchQuery,
+  primaryQuery,
+  rerank,
+  type MatchChoice,
+} from './factor-matching.js';
 import type { ServiceDeps } from './index.js';
 
 export const REVIEW_THRESHOLD = 0.6;
@@ -98,7 +105,12 @@ export const createCalculationService = ({ repositories: repos, ai }: ServiceDep
           key,
           (async () => {
             const query = matchQuery(input);
-            const hits = await repos.emissionFactors.search({ query, units: compatibleUnits(a.unit), limit: 25 });
+            const hits = await repos.emissionFactors.search({
+              query,
+              primary: primaryQuery(input),
+              units: compatibleUnits(a.unit),
+              limit: 40,
+            });
             return { ...(await chooseFactor(ai, input, rerank(hits, input))), query };
           })(),
         );

@@ -75,6 +75,7 @@ export function DashboardContainer() {
         active: true,
         createdAt: '',
       })),
+      'LR',
     );
     const ns: BuFlowNode[] = list.map((n) => ({
       id: n.orgUnitId,

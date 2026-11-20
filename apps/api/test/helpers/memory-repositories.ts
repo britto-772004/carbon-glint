@@ -481,8 +481,8 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
           .filter((f) => ids.includes(f.id))
           .map((factor) => ({ factor, source: store.efSources.find((x) => x.id === factor.sourceId)! }));
       },
-      async search({ query, units, scopeHint, limit = 20 }) {
-        const words = query
+      async search({ query, primary, units, scopeHint, limit = 20 }) {
+        const words = (primary || query)
           .toLowerCase()
           .split(/[^a-z0-9]+/)
           .filter((w) => w.length > 2);

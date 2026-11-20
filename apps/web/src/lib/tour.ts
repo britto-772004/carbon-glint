@@ -154,7 +154,7 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/app/dashboard',
     target: 'dash-lasagne',
     title: 'The lasagne view',
-    body: 'Rows are scopes (or business units), columns are months. Darker cells mean more CO2e. Click a row to drill down: scope → category → activity definition → individual activity.',
+    body: 'Rows are scopes (or business units), columns are months. Stronger colour means more CO2e. Click a row to drill down: scope → category → activity definition → individual activity.',
   },
   {
     id: 'dash-kpis',

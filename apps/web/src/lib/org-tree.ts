@@ -32,10 +32,17 @@ export function flattenTree(units: OrgUnit[]): TreeRow[] {
   return rows;
 }
 
-/** Top-down tree layout (dagre). Returns top-left positions keyed by unit id. */
-export function layoutTree(units: OrgUnit[]): Record<string, { x: number; y: number }> {
+/**
+ * Tree layout (dagre). Top-down by default; `LR` (left → right) suits tall, narrow panels such as the
+ * dashboard. Returns top-left positions keyed by unit id.
+ */
+export function layoutTree(units: OrgUnit[], direction: 'TB' | 'LR' = 'TB'): Record<string, { x: number; y: number }> {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: 'TB', nodesep: 40, ranksep: 70, marginx: 20, marginy: 20 });
+  g.setGraph(
+    direction === 'LR'
+      ? { rankdir: 'LR', nodesep: 18, ranksep: 60, marginx: 16, marginy: 16 }
+      : { rankdir: 'TB', nodesep: 40, ranksep: 70, marginx: 20, marginy: 20 },
+  );
   g.setDefaultEdgeLabel(() => ({}));
   const ids = new Set(units.map((u) => u.id));
   for (const u of units) g.setNode(u.id, { width: NODE_WIDTH, height: NODE_HEIGHT });

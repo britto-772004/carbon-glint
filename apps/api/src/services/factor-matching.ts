@@ -27,6 +27,9 @@ export interface MatchChoice {
 }
 
 /** Search text for an activity: what it is, where, and the GHG category it belongs to. */
+/** The activity's own words — what the search weights most. */
+export const primaryQuery = ({ activity }: MatchInput) => activity.description;
+
 export const matchQuery = ({ activity, countryName, category }: MatchInput) =>
   [activity.description, activity.location, countryName, category.name.replace(/^\d+\.\s*/, '')]
     .filter(Boolean)
@@ -35,7 +38,14 @@ export const matchQuery = ({ activity, countryName, category }: MatchInput) =>
 /** Domain-aware re-ranking of search hits for an activity. */
 export function rerank(hits: FactorHit[], input: MatchInput): FactorHit[] {
   const wantsWtt = input.category.code === 'S3_C3'; // fuel- & energy-related activities = WTT / T&D
+  const wasteCategory = input.category.code === 'S3_C5' || input.category.code === 'S3_C12';
   const country = input.countryName?.toLowerCase();
+  const words = new Set(
+    input.activity.description
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 2),
+  );
   return hits
     .map((h) => {
       let s = h.score;
@@ -44,6 +54,17 @@ export function rerank(hits: FactorHit[], input: MatchInput): FactorHit[] {
       if (isWtt !== wantsWtt) s -= 0.12;
       if (/outside of scopes/i.test(h.factor.category)) s -= 0.2;
       if (country && h.factor.region.toLowerCase() === country) s += 0.2;
+      // Waste-disposal factors (combustion/landfill/composting of materials) only fit waste categories.
+      const disposal = /›\s*(Combustion|Landfill|Composting|Anaerobic digestion|Open-loop|Closed-loop)\s*›/i.test(
+        h.factor.name,
+      );
+      if (disposal) s += wasteCategory ? 0.15 : -0.25;
+      // Reward factors that name the activity's own words (e.g. "LPG", "diesel", "R410A").
+      if (words.size) {
+        const name = h.factor.name.toLowerCase();
+        const hits = [...words].filter((w) => name.includes(w)).length;
+        s += 0.2 * (hits / words.size);
+      }
       return { ...h, score: s };
     })
     .sort((a, b) => b.score - a.score);

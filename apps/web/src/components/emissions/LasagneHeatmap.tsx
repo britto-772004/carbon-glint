@@ -18,7 +18,7 @@ import TableRow from '@mui/material/TableRow';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import { useChartColors } from '../common/useChartColors';
 import { formatCo2e, pct } from './format';
 
 export interface LasagneHeatmapProps {
@@ -45,13 +45,13 @@ const MAX_ROWS = 25;
 
 /** Lasagna plot: rows = entities at the current drill level, columns = time, colour = t CO₂e. */
 export function LasagneHeatmap(p: LasagneHeatmapProps) {
-  const theme = useTheme();
+  const c = useChartColors();
   const data = p.data;
   const rows = (data?.rows ?? []).slice(0, MAX_ROWS);
   const max = Math.max(1, ...rows.flatMap((r) => r.cells));
   const option = data && {
-    textStyle: { fontFamily: theme.typography.fontFamily },
-    grid: { left: 8, right: 16, top: 8, bottom: 48, containLabel: true },
+    textStyle: { fontFamily: c.fontFamily },
+    grid: { left: 8, right: 16, top: 8, bottom: 72, containLabel: true },
     tooltip: {
       formatter: (params: { data: [number, number, number | '-'] }) => {
         const [x, y, v] = params.data;
@@ -64,7 +64,7 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
       type: 'category',
       data: data.columns,
       splitArea: { show: true },
-      axisLabel: { color: theme.palette.text.secondary },
+      axisLabel: { color: c.textSecondary },
     },
     yAxis: {
       type: 'category',
@@ -74,7 +74,7 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
           (r) =>
             `${r.label.length > 34 ? `${r.label.slice(0, 33)}…` : r.label}  ·  ${formatCo2e(r.total, { unit: false })}`,
         ),
-      axisLabel: { color: theme.palette.text.primary },
+      axisLabel: { color: c.text },
     },
     visualMap: {
       min: 0,
@@ -83,9 +83,9 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
       orient: 'horizontal',
       left: 'center',
       bottom: 0,
-      inRange: { color: ['#ecfdf5', '#a7f3d0', '#34d399', '#0f766e', '#134e4a'] },
+      inRange: { color: c.heat },
       formatter: (v: number) => formatCo2e(v, { unit: false }),
-      textStyle: { color: theme.palette.text.secondary },
+      textStyle: { color: c.textSecondary },
     },
     series: [
       {
@@ -93,8 +93,8 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
         data: [...rows]
           .reverse()
           .flatMap((r, y) => r.cells.map((v, x) => [x, y, v > 0 ? Math.round(v * 100) / 100 : '-'])),
-        itemStyle: { borderColor: theme.palette.background.paper, borderWidth: 2 },
-        emphasis: { itemStyle: { borderColor: theme.palette.secondary.main } },
+        itemStyle: { borderColor: c.paper, borderWidth: 2, borderRadius: 4 },
+        emphasis: { itemStyle: { borderColor: c.accent } },
       },
     ],
   };

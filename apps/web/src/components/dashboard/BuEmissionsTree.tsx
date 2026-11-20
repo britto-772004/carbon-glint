@@ -37,7 +37,7 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
         background: node.parentId ? undefined : 'linear-gradient(135deg, rgba(20,184,166,0.10), rgba(101,163,13,0.06))',
       }}
     >
-      <Handle type="target" position={Position.Top} isConnectable={false} />
+      <Handle type="target" position={Position.Left} isConnectable={false} />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline', justifyContent: 'space-between' }}>
         <Typography variant="subtitle2" noWrap title={node.name} sx={{ minWidth: 0 }}>
           {node.name}
@@ -67,7 +67,7 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
           </Stack>
         ))}
       </Stack>
-      <Handle type="source" position={Position.Bottom} isConnectable={false} />
+      <Handle type="source" position={Position.Right} isConnectable={false} />
     </Paper>
   );
 }
@@ -127,7 +127,7 @@ export function BuEmissionsTree({ nodes, edges, isLoading, selectedName, fill }:
               nodesDraggable={false}
               nodesConnectable={false}
               fitView
-              fitViewOptions={{ padding: 0.15 }}
+              fitViewOptions={{ padding: 0.08, maxZoom: 1 }}
               minZoom={0.2}
               proOptions={{ hideAttribution: true }}
             >

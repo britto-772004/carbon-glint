@@ -10,7 +10,7 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import { useChartColors } from '../common/useChartColors';
 import { chartToCsv } from './chat-utils';
 
 const PALETTE = ['#0f766e', '#d97706', '#65a30d', '#0369a1', '#be123c', '#7c3aed'];
@@ -25,13 +25,13 @@ export function ChatChart({
   showTable: boolean;
   onToggleTable: () => void;
 }) {
-  const theme = useTheme();
+  const c = useChartColors();
   const isPie = chart.type === 'pie';
   const option = {
     color: PALETTE,
-    textStyle: { fontFamily: theme.typography.fontFamily },
+    textStyle: { fontFamily: c.fontFamily },
     tooltip: { trigger: isPie ? 'item' : 'axis' },
-    legend: { bottom: 0, textStyle: { color: theme.palette.text.secondary } },
+    legend: { bottom: 0, textStyle: { color: c.textSecondary } },
     grid: { left: 8, right: 8, top: 16, bottom: 40, containLabel: true },
     ...(isPie
       ? {

@@ -22,23 +22,16 @@ export interface DashboardPageProps {
 export function DashboardPage(p: DashboardPageProps) {
   return (
     <Stack spacing={2}>
-      <Stack
-        direction={{ xs: 'column', lg: 'row' }}
-        spacing={1.5}
-        sx={{ justifyContent: 'space-between', alignItems: { lg: 'center' } }}
-      >
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h5" component="h1" sx={{ fontWeight: 700 }}>
-            Dashboard
-          </Typography>
-          <Typography variant="body2" color="text.secondary" noWrap>
-            {p.title}
-          </Typography>
-        </Box>
-        <Box sx={{ minWidth: 0 }}>{p.filters}</Box>
-      </Stack>
-      <Box data-tour="dash-kpis">{p.kpis}</Box>
-      <Grid container spacing={2} sx={{ height: { lg: 'calc(100vh - 290px)' }, minHeight: { lg: 480 } }}>
+      <Box>
+        <Typography variant="h5" component="h1" sx={{ fontWeight: 700 }}>
+          Dashboard
+        </Typography>
+        <Typography variant="body2" color="text.secondary" noWrap>
+          {p.title}
+        </Typography>
+      </Box>
+      {p.filters}
+      <Grid container spacing={2} sx={{ height: { lg: 'calc(100vh - 225px)' }, minHeight: { lg: 460 } }}>
         <Grid size={{ xs: 12, lg: 5 }} sx={{ height: { xs: 460, lg: '100%' } }}>
           {p.tree}
         </Grid>
@@ -46,6 +39,7 @@ export function DashboardPage(p: DashboardPageProps) {
           {p.lasagne}
         </Grid>
       </Grid>
+      <Box data-tour="dash-kpis">{p.kpis}</Box>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 7 }}>{p.trend}</Grid>
         <Grid size={{ xs: 12, md: 5 }}>{p.top}</Grid>

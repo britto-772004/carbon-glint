@@ -11,6 +11,11 @@ export interface FactorHit {
 
 export interface FactorSearch {
   query: string;
+  /**
+   * The words that matter most (the activity description). Weighted above `query`, which also carries
+   * location and category words — so "LPG – cafeteria … Stationary combustion" finds LPG, not waste combustion.
+   */
+  primary?: string;
   /** Only factors in these catalogue units (unit-compatible with the activity). */
   units?: string[];
   scopeHint?: number;
@@ -71,19 +76,21 @@ export const createEmissionFactorRepository = (db: DbExecutor): EmissionFactorRe
       .where(inArray(emissionFactors.id, ids));
   },
 
-  async search({ query, units, scopeHint, limit = 20 }) {
+  async search({ query, primary, units, scopeHint, limit = 20 }) {
     const q = query.trim();
     if (!q) return [];
-    const tsq = sql`websearch_to_tsquery('english', ${q})`;
-    const orTsq = sql`to_tsquery('english', ${
-      q
+    const orOf = (text: string) =>
+      text
         .toLowerCase()
         .split(/[^a-z0-9]+/)
         .filter((w) => w.length > 1)
-        .join(' | ') || 'x'
-    })`;
-    const trigram = sql`greatest(similarity(${emissionFactors.name}, ${q}), word_similarity(${q}, ${emissionFactors.name}))`;
-    const score = sql<number>`(0.6 * ts_rank_cd(${emissionFactors.search}, ${orTsq}) + 0.4 * ${trigram})`;
+        .join(' | ') || 'x';
+    const p = (primary ?? '').trim() || q;
+    const tsq = sql`websearch_to_tsquery('english', ${q})`;
+    const orTsq = sql`to_tsquery('english', ${orOf(q)})`;
+    const primaryTsq = sql`to_tsquery('english', ${orOf(p)})`;
+    const trigram = sql`greatest(similarity(${emissionFactors.name}, ${p}), word_similarity(${p}, ${emissionFactors.name}))`;
+    const score = sql<number>`(0.5 * ts_rank_cd(${emissionFactors.search}, ${primaryTsq}) + 0.2 * ts_rank_cd(${emissionFactors.search}, ${orTsq}) + 0.3 * ${trigram})`;
     const rows = await db
       .select({ factor: emissionFactors, source: efSources, score })
       .from(emissionFactors)
