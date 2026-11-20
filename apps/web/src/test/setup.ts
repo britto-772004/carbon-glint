@@ -6,6 +6,18 @@ import { server } from './mocks/server';
 import { resetSession } from './mocks/session';
 import { TEST_API_BASE_URL } from './constants';
 
+// jsdom lacks these; React Flow needs them.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+globalThis.DOMMatrixReadOnly ??= class {
+  m22 = 1;
+  constructor() {}
+} as unknown as typeof DOMMatrixReadOnly;
+
 // The real generated SDK runs in tests; MSW intercepts at the network layer.
 configureSdk({ baseUrl: TEST_API_BASE_URL });
 

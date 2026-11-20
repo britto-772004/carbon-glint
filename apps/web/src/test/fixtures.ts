@@ -1,4 +1,4 @@
-import type { Health, Industry, Invitation, Me, Tenant, TenantSummary, User } from '@carbon-glint/sdk';
+import type { Health, Industry, Invitation, Me, OrgUnit, Tenant, TenantSummary, User } from '@carbon-glint/sdk';
 
 /**
  * Fixture builders typed with SDK types — if the spec changes, fixtures fail to compile.
@@ -75,3 +75,38 @@ export const buildTenantSummary = (overrides: Partial<TenantSummary> = {}): Tena
   createdAt: '2026-11-01T10:00:00.000Z',
   ...overrides,
 });
+
+export const buildOrgUnit = (overrides: Partial<OrgUnit> = {}): OrgUnit => ({
+  id: '10000000-0000-4000-8000-000000000001',
+  parentId: null,
+  name: 'Acme HQ',
+  code: 'HQ',
+  type: 'hq',
+  country: 'IN',
+  city: 'Bengaluru',
+  address: null,
+  active: true,
+  createdAt: '2026-11-01T10:00:00.000Z',
+  ...overrides,
+});
+
+export const ORG_UNITS: OrgUnit[] = [
+  buildOrgUnit(),
+  buildOrgUnit({
+    id: '10000000-0000-4000-8000-000000000002',
+    parentId: '10000000-0000-4000-8000-000000000001',
+    name: 'Pune Plant',
+    code: 'PUN',
+    type: 'plant',
+    city: 'Pune',
+  }),
+  buildOrgUnit({
+    id: '10000000-0000-4000-8000-000000000003',
+    parentId: '10000000-0000-4000-8000-000000000001',
+    name: 'Dubai Office',
+    code: 'DXB',
+    type: 'office',
+    country: 'AE',
+    city: 'Dubai',
+  }),
+];

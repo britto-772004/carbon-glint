@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiError, GetHealthResponse, Industry, Invitation, Me, User } from '@carbon-glint/sdk';
+import type { ApiError, GetHealthResponse, Industry, Invitation, Me, OrgUnit, User } from '@carbon-glint/sdk';
 import { apiUrl } from '../constants';
-import { INDUSTRIES, buildHealth, buildInvitation, buildUser } from '../fixtures';
+import { INDUSTRIES, ORG_UNITS, buildHealth, buildInvitation, buildUser } from '../fixtures';
 import { session } from './session';
 
 /** Spec-shaped error response helper for overriding handlers in tests. */
@@ -25,4 +25,5 @@ export const handlers = [
   http.get(apiUrl('/industries'), () => HttpResponse.json<Industry[]>(INDUSTRIES)),
   http.get(apiUrl('/users'), () => HttpResponse.json<User[]>([buildUser()])),
   http.get(apiUrl('/invitations'), () => HttpResponse.json<Invitation[]>([buildInvitation()])),
+  http.get(apiUrl('/org-units'), () => HttpResponse.json<OrgUnit[]>(ORG_UNITS)),
 ];
