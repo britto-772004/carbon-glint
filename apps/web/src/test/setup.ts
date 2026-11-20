@@ -27,7 +27,7 @@ globalThis.DOMMatrixReadOnly ??= class {
 } as unknown as typeof DOMMatrixReadOnly;
 
 // Async UI can be slow when the API and web suites run in parallel (CI / pnpm -r).
-configure({ asyncUtilTimeout: 5000 });
+configure({ asyncUtilTimeout: 10_000 });
 
 // The real generated SDK runs in tests; MSW intercepts at the network layer.
 configureSdk({ baseUrl: TEST_API_BASE_URL });

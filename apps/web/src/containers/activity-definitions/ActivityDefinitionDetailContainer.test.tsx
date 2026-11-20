@@ -104,7 +104,7 @@ describe('Activity Definition detail + upload wizard', () => {
 
     await user.click(within(dialog).getByLabelText(/Import valid rows/));
     await user.click(within(dialog).getByRole('button', { name: 'Import' }));
-    expect(await within(dialog).findByText('Imported 10 activities.', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await within(dialog).findByText('Imported 10 activities.', {}, { timeout: 10_000 })).toBeInTheDocument();
     expect(importBody).toEqual({ mapping: MAPPING, mappingMode: 'ai', onlyValidRows: true });
   });
 

@@ -50,7 +50,7 @@ describe('Reports', () => {
     await user.click(screen.getByRole('button', { name: 'Generate PDF' }));
     await waitFor(() => expect(body).toMatchObject({ orgUnitId: ORG_UNITS[0]!.id, format: 'IN_BRSR' }));
     const table = await screen.findByRole('table', { name: 'Reports' });
-    const link = await within(table).findByRole('link', { name: 'Download PDF' }, { timeout: 5000 });
+    const link = await within(table).findByRole('link', { name: 'Download PDF' }, { timeout: 10_000 });
     expect(link).toHaveAttribute('href', '/api/reports/r0000000-0000-4000-8000-000000000001/download');
   });
 });

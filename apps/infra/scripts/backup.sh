@@ -9,6 +9,8 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 FILE="$BACKUP_DIR/carbon_glint-$STAMP.dump"
 
 mkdir -p "$BACKUP_DIR"
+# The redirect is meant to run as the invoking user (it owns $BACKUP_DIR); only pg_dump needs to be postgres.
+# shellcheck disable=SC2024
 sudo -u postgres pg_dump --format=custom --compress=9 carbon_glint > "$FILE"
 echo "backup written: $FILE ($(du -h "$FILE" | cut -f1))"
 
