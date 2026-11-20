@@ -92,7 +92,15 @@ export function createGeminiClient(apiKey: string | undefined, model: string): A
           config: {
             systemInstruction: system,
             temperature: 0.2,
-            tools: [{ functionDeclarations: tools.map((t) => ({ name: t.name, description: t.description, parametersJsonSchema: t.parameters })) }],
+            tools: [
+              {
+                functionDeclarations: tools.map((t) => ({
+                  name: t.name,
+                  description: t.description,
+                  parametersJsonSchema: t.parameters,
+                })),
+              },
+            ],
           },
         });
         const fnCalls = res.functionCalls ?? [];

@@ -28,10 +28,15 @@ const FILTER_PROPS = {
 };
 
 export const ASSISTANT_TOOLS: AiTool[] = [
-  { name: 'get_emissions_summary', description: 'Total kg CO2e by scope plus data-quality counts for optional filters.', parameters: { type: 'object', properties: FILTER_PROPS } },
+  {
+    name: 'get_emissions_summary',
+    description: 'Total kg CO2e by scope plus data-quality counts for optional filters.',
+    parameters: { type: 'object', properties: FILTER_PROPS },
+  },
   {
     name: 'get_emissions_breakdown',
-    description: 'kg CO2e grouped by scope, category, activityDefinition, orgUnit or activity, per month/quarter/year. Use for comparisons and trends.',
+    description:
+      'kg CO2e grouped by scope, category, activityDefinition, orgUnit or activity, per month/quarter/year. Use for comparisons and trends.',
     parameters: {
       type: 'object',
       properties: {
@@ -42,11 +47,20 @@ export const ASSISTANT_TOOLS: AiTool[] = [
       required: ['groupBy'],
     },
   },
-  { name: 'list_business_units', description: 'The company business-unit tree with rolled-up kg CO2e per scope.', parameters: { type: 'object', properties: {} } },
-  { name: 'list_activity_definitions', description: 'Activity definitions with scope, category, period, status and counts.', parameters: { type: 'object', properties: {} } },
+  {
+    name: 'list_business_units',
+    description: 'The company business-unit tree with rolled-up kg CO2e per scope.',
+    parameters: { type: 'object', properties: {} },
+  },
+  {
+    name: 'list_activity_definitions',
+    description: 'Activity definitions with scope, category, period, status and counts.',
+    parameters: { type: 'object', properties: {} },
+  },
   {
     name: 'search_company_knowledge',
-    description: 'Semantic search over the company’s setup: business units, activity definitions, data sources, emission factors used, overrides.',
+    description:
+      'Semantic search over the company’s setup: business units, activity definitions, data sources, emission factors used, overrides.',
     parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
   },
 ];
@@ -63,7 +77,14 @@ const ANSWER_SCHEMA = {
         title: { type: 'string' },
         unit: { type: 'string' },
         categories: { type: 'array', items: { type: 'string' } },
-        series: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, data: { type: 'array', items: { type: 'number' } } }, required: ['name', 'data'] } },
+        series: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { name: { type: 'string' }, data: { type: 'array', items: { type: 'number' } } },
+            required: ['name', 'data'],
+          },
+        },
       },
       required: ['type', 'title', 'unit', 'categories', 'series'],
     },
@@ -96,10 +117,18 @@ export function sanitizeChart(chart: unknown): ChartSpec | null {
 }
 
 const toMessageDto = (m: ChatMessageModel): Schemas['ChatMessage'] => ({
-  id: m.id, role: m.role, content: m.content, chart: m.chart ?? null, sources: m.sources, createdAt: m.createdAt.toISOString(),
+  id: m.id,
+  role: m.role,
+  content: m.content,
+  chart: m.chart ?? null,
+  sources: m.sources,
+  createdAt: m.createdAt.toISOString(),
 });
 
-export const createAssistantService = ({ repositories: repos, ai, jobs }: ServiceDeps, emissions: EmissionsService): AssistantService => {
+export const createAssistantService = (
+  { repositories: repos, ai, jobs }: ServiceDeps,
+  emissions: EmissionsService,
+): AssistantService => {
   /** Resolve human names in tool args into service filters (tenant-scoped lookups). */
   const resolveFilters = async (actor: Actor, args: Record<string, unknown>): Promise<EmissionQuery> => {
     const tenantId = requireTenantId(actor);
@@ -107,11 +136,15 @@ export const createAssistantService = ({ repositories: repos, ai, jobs }: Servic
     if ([1, 2, 3].includes(Number(args.scope))) q.scope = Number(args.scope);
     if (typeof args.from === 'string') q.from = args.from;
     if (typeof args.to === 'string') q.to = args.to;
-    const norm = (s: unknown) => String(s ?? '').trim().toLowerCase();
+    const norm = (s: unknown) =>
+      String(s ?? '')
+        .trim()
+        .toLowerCase();
     if (args.businessUnit) {
       const units = await repos.orgUnits.listByTenant(tenantId);
-      const u = units.find((x) => norm(x.code) === norm(args.businessUnit) || norm(x.name) === norm(args.businessUnit))
-        ?? units.find((x) => norm(x.name).includes(norm(args.businessUnit)));
+      const u =
+        units.find((x) => norm(x.code) === norm(args.businessUnit) || norm(x.name) === norm(args.businessUnit)) ??
+        units.find((x) => norm(x.name).includes(norm(args.businessUnit)));
       if (!u) throw new Error(`No business unit matches "${String(args.businessUnit)}"`);
       q.orgUnitId = u.id;
     }
@@ -136,39 +169,60 @@ export const createAssistantService = ({ repositories: repos, ai, jobs }: Servic
     return vec?.length ? repos.assistant.searchEmbeddings(tenantId, vec, k) : [];
   };
 
-  const executeTool = (actor: Actor) => async (name: string, args: Record<string, unknown>): Promise<unknown> => {
-    switch (name) {
-      case 'get_emissions_summary':
-        return emissions.summary(actor, await resolveFilters(actor, args));
-      case 'get_emissions_breakdown': {
-        const groupBy = (['scope', 'category', 'activityDefinition', 'orgUnit', 'activity'] as const).find((g) => g === args.groupBy) ?? 'scope';
-        const bucket = (['month', 'quarter', 'year'] as const).find((b) => b === args.bucket) ?? 'month';
-        const h = await emissions.heatmap(actor, await resolveFilters(actor, args), groupBy, bucket);
-        return { ...h, rows: h.rows.slice(0, 15) };
+  const executeTool =
+    (actor: Actor) =>
+    async (name: string, args: Record<string, unknown>): Promise<unknown> => {
+      switch (name) {
+        case 'get_emissions_summary':
+          return emissions.summary(actor, await resolveFilters(actor, args));
+        case 'get_emissions_breakdown': {
+          const groupBy =
+            (['scope', 'category', 'activityDefinition', 'orgUnit', 'activity'] as const).find(
+              (g) => g === args.groupBy,
+            ) ?? 'scope';
+          const bucket = (['month', 'quarter', 'year'] as const).find((b) => b === args.bucket) ?? 'month';
+          const h = await emissions.heatmap(actor, await resolveFilters(actor, args), groupBy, bucket);
+          return { ...h, rows: h.rows.slice(0, 15) };
+        }
+        case 'list_business_units':
+          return (await emissions.orgTree(actor, {})).map((n) => ({
+            name: n.name,
+            code: n.code,
+            parentId: n.parentId,
+            id: n.orgUnitId,
+            rollupKgCo2e: n.rollup,
+          }));
+        case 'list_activity_definitions':
+          return (await repos.activityDefinitions.list(requireTenantId(actor), {})).map((r) => ({
+            name: r.definition.name,
+            scope: r.definition.scope,
+            category: r.category.name,
+            status: r.definition.status,
+            period: `${r.definition.periodStart}..${r.definition.periodEnd}`,
+            activities: r.activityCount,
+          }));
+        case 'search_company_knowledge':
+          return (await knowledge(requireTenantId(actor), String(args.query ?? ''))).map((h) => ({
+            source: `${h.sourceType}:${h.sourceId}`,
+            text: h.content,
+          }));
+        default:
+          throw new Error(`Unknown tool ${name}`);
       }
-      case 'list_business_units':
-        return (await emissions.orgTree(actor, {})).map((n) => ({ name: n.name, code: n.code, parentId: n.parentId, id: n.orgUnitId, rollupKgCo2e: n.rollup }));
-      case 'list_activity_definitions':
-        return (await repos.activityDefinitions.list(requireTenantId(actor), {})).map((r) => ({
-          name: r.definition.name, scope: r.definition.scope, category: r.category.name, status: r.definition.status,
-          period: `${r.definition.periodStart}..${r.definition.periodEnd}`, activities: r.activityCount,
-        }));
-      case 'search_company_knowledge':
-        return (await knowledge(requireTenantId(actor), String(args.query ?? ''))).map((h) => ({ source: `${h.sourceType}:${h.sourceId}`, text: h.content }));
-      default:
-        throw new Error(`Unknown tool ${name}`);
-    }
-  };
+    };
 
   return {
     async chat(actor, input) {
       const tenantId = requireTenantId(actor);
       if (!ai.available) {
-        throw new BusinessRuleError('The assistant needs a Gemini API key (GEMINI_API_KEY).', { code: 'AI_NOT_CONFIGURED' });
+        throw new BusinessRuleError('The assistant needs a Gemini API key (GEMINI_API_KEY).', {
+          code: 'AI_NOT_CONFIGURED',
+        });
       }
       const day = new Date().toISOString().slice(0, 10);
       const quota = await repos.rateLimits.hit(`assistant:${tenantId}:${day}`, DAILY_MESSAGE_LIMIT, 86_400);
-      if (!quota.allowed) throw new TooManyRequestsError('Daily assistant limit reached for your company.', { code: 'ASSISTANT_LIMIT' });
+      if (!quota.allowed)
+        throw new TooManyRequestsError('Daily assistant limit reached for your company.', { code: 'ASSISTANT_LIMIT' });
 
       const conversation = input.conversationId
         ? await repos.assistant.findConversation(tenantId, actor.userId, input.conversationId)
@@ -184,9 +238,17 @@ export const createAssistantService = ({ repositories: repos, ai, jobs }: Servic
       let answer: { answer: string; chart?: unknown; sources?: string[]; suggestions?: string[] };
       let toolCalls: Array<{ name: string; args: unknown }> = [];
       try {
-        const agent = await ai.runAgent({ system: SYSTEM, history, message: input.message, tools: ASSISTANT_TOOLS, execute: executeTool(actor) });
+        const agent = await ai.runAgent({
+          system: SYSTEM,
+          history,
+          message: input.message,
+          tools: ASSISTANT_TOOLS,
+          execute: executeTool(actor),
+        });
         toolCalls = agent.toolCalls.map(({ name, args }) => ({ name, args }));
-        const evidence = JSON.stringify(agent.toolCalls.map((c) => ({ tool: c.name, args: c.args, result: c.result }))).slice(0, 30_000);
+        const evidence = JSON.stringify(
+          agent.toolCalls.map((c) => ({ tool: c.name, args: c.args, result: c.result })),
+        ).slice(0, 30_000);
         answer = await ai.generateJson(
           [
             `Question: ${input.message}`,
@@ -245,29 +307,55 @@ export const createAssistantService = ({ repositories: repos, ai, jobs }: Servic
       ]);
       const docs: Array<{ sourceType: string; sourceId: string; content: string }> = [];
       if (tenant) {
-        docs.push({ sourceType: 'company', sourceId: tenant.tenant.id, content: `Company ${tenant.tenant.name} (${tenant.tenant.emailDomain}); industry ${tenant.industry?.name ?? 'unknown'}; employees ${tenant.tenant.employeeBand ?? '?'}; ${tenant.tenant.businessUnitCount ?? '?'} business units.` });
+        docs.push({
+          sourceType: 'company',
+          sourceId: tenant.tenant.id,
+          content: `Company ${tenant.tenant.name} (${tenant.tenant.emailDomain}); industry ${tenant.industry?.name ?? 'unknown'}; employees ${tenant.tenant.employeeBand ?? '?'}; ${tenant.tenant.businessUnitCount ?? '?'} business units.`,
+        });
       }
       const unitName = new Map(units.map((u) => [u.id, u.name]));
       for (const u of units) {
-        docs.push({ sourceType: 'business_unit', sourceId: u.id, content: `Business unit ${u.name} (code ${u.code}, ${u.type}) in ${[u.city, u.country].filter(Boolean).join(', ') || 'unknown location'}; parent ${u.parentId ? unitName.get(u.parentId) : 'none (top level)'}; ${u.active ? 'active' : 'inactive'}.` });
+        docs.push({
+          sourceType: 'business_unit',
+          sourceId: u.id,
+          content: `Business unit ${u.name} (code ${u.code}, ${u.type}) in ${[u.city, u.country].filter(Boolean).join(', ') || 'unknown location'}; parent ${u.parentId ? unitName.get(u.parentId) : 'none (top level)'}; ${u.active ? 'active' : 'inactive'}.`,
+        });
       }
       for (const r of ads) {
         const sources = await repos.dataSources.listByDefinition(tenantId, r.definition.id);
         docs.push({
-          sourceType: 'activity_definition', sourceId: r.definition.id,
+          sourceType: 'activity_definition',
+          sourceId: r.definition.id,
           content: `Activity definition "${r.definition.name}": ${r.definition.description || 'no description'}. Scope ${r.definition.scope}, category ${r.category.name}, period ${r.definition.periodStart} to ${r.definition.periodEnd}, status ${r.definition.status}, ${r.activityCount} activities from ${sources.map((s) => `${s.fileName} (${s.status}, ${s.mappingMode ?? 'unmapped'} mapping)`).join('; ') || 'no data sources'}.`,
         });
       }
       const factorsUsed = new Map<string, string>();
-      for (const f of overrides) if (f.factor) factorsUsed.set(f.factor.id, `${f.factor.name} = ${f.factor.co2ePerUnit} kg CO2e/${f.factor.unit} (${f.factor.sourceCode}, ${f.factor.region}) used for "${f.description}"`);
-      for (const [id, text] of factorsUsed) docs.push({ sourceType: 'emission_factor', sourceId: id, content: `Emission factor ${text}.` });
+      for (const f of overrides)
+        if (f.factor)
+          factorsUsed.set(
+            f.factor.id,
+            `${f.factor.name} = ${f.factor.co2ePerUnit} kg CO2e/${f.factor.unit} (${f.factor.sourceCode}, ${f.factor.region}) used for "${f.description}"`,
+          );
+      for (const [id, text] of factorsUsed)
+        docs.push({ sourceType: 'emission_factor', sourceId: id, content: `Emission factor ${text}.` });
       for (const f of overrides.filter((x) => x.status === 'overridden')) {
         const history = await repos.calculations.listOverrides(tenantId, f.activityId);
         const last = history.filter((o) => !o.revertedAt).at(-1);
-        if (last) docs.push({ sourceType: 'override', sourceId: f.activityId, content: `Manual override on "${f.description}" (${f.activityDefinitionName}): ${last.type}, reason "${last.reason}", now ${f.co2eKg} kg CO2e.` });
+        if (last)
+          docs.push({
+            sourceType: 'override',
+            sourceId: f.activityId,
+            content: `Manual override on "${f.description}" (${f.activityDefinitionName}): ${last.type}, reason "${last.reason}", now ${f.co2eKg} kg CO2e.`,
+          });
       }
-      const vectors = await ai.embed(docs.map((d) => d.content), 'RETRIEVAL_DOCUMENT');
-      return repos.assistant.replaceEmbeddings(tenantId, docs.map((d, i) => ({ ...d, embedding: vectors[i]! })).filter((d) => d.embedding?.length));
+      const vectors = await ai.embed(
+        docs.map((d) => d.content),
+        'RETRIEVAL_DOCUMENT',
+      );
+      return repos.assistant.replaceEmbeddings(
+        tenantId,
+        docs.map((d, i) => ({ ...d, embedding: vectors[i]! })).filter((d) => d.embedding?.length),
+      );
     },
   };
 };

@@ -39,7 +39,12 @@ export const createAssistantRepository = (db: DbExecutor): AssistantRepository =
   async searchEmbeddings(tenantId, vector, k) {
     const distance = cosineDistance(embeddings.embedding, vector);
     const rows = await db
-      .select({ sourceType: embeddings.sourceType, sourceId: embeddings.sourceId, content: embeddings.content, distance })
+      .select({
+        sourceType: embeddings.sourceType,
+        sourceId: embeddings.sourceId,
+        content: embeddings.content,
+        distance,
+      })
       .from(embeddings)
       .where(eq(embeddings.tenantId, tenantId))
       .orderBy(distance)
@@ -54,7 +59,13 @@ export const createAssistantRepository = (db: DbExecutor): AssistantRepository =
     const [row] = await db
       .select()
       .from(chatConversations)
-      .where(and(eq(chatConversations.tenantId, tenantId), eq(chatConversations.userId, userId), eq(chatConversations.id, id)))
+      .where(
+        and(
+          eq(chatConversations.tenantId, tenantId),
+          eq(chatConversations.userId, userId),
+          eq(chatConversations.id, id),
+        ),
+      )
       .limit(1);
     return row ?? null;
   },
@@ -73,5 +84,9 @@ export const createAssistantRepository = (db: DbExecutor): AssistantRepository =
     return saved!;
   },
   listMessages: (conversationId) =>
-    db.select().from(chatMessages).where(eq(chatMessages.conversationId, conversationId)).orderBy(asc(chatMessages.createdAt)),
+    db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.conversationId, conversationId))
+      .orderBy(asc(chatMessages.createdAt)),
 });

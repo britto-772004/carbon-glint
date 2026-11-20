@@ -616,18 +616,30 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
     assistant: {
       async replaceEmbeddings(tenantId, rows) {
         store.embeddings = store.embeddings.filter((e) => e.tenantId !== tenantId);
-        for (const r of rows) store.embeddings.push({ id: randomUUID(), updatedAt: now(), ...r, tenantId } as EmbeddingModel);
+        for (const r of rows)
+          store.embeddings.push({ id: randomUUID(), updatedAt: now(), ...r, tenantId } as EmbeddingModel);
         return rows.length;
       },
       async searchEmbeddings(tenantId, vector, k) {
         const cos = (a: number[], b: number[]) => {
-          let dot = 0, na = 0, nb = 0;
-          for (let i = 0; i < a.length; i++) { dot += a[i]! * (b[i] ?? 0); na += a[i]! ** 2; nb += (b[i] ?? 0) ** 2; }
+          let dot = 0,
+            na = 0,
+            nb = 0;
+          for (let i = 0; i < a.length; i++) {
+            dot += a[i]! * (b[i] ?? 0);
+            na += a[i]! ** 2;
+            nb += (b[i] ?? 0) ** 2;
+          }
           return na && nb ? 1 - dot / Math.sqrt(na * nb) : 1;
         };
         return store.embeddings
           .filter((e) => e.tenantId === tenantId)
-          .map((e) => ({ sourceType: e.sourceType, sourceId: e.sourceId, content: e.content, distance: cos(vector, e.embedding) }))
+          .map((e) => ({
+            sourceType: e.sourceType,
+            sourceId: e.sourceId,
+            content: e.content,
+            distance: cos(vector, e.embedding),
+          }))
           .sort((a, b) => a.distance - b.distance)
           .slice(0, k);
       },
@@ -638,13 +650,22 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
       },
       findConversation: async (tenantId, userId, id) =>
         store.conversations.find((c) => c.tenantId === tenantId && c.userId === userId && c.id === id) ?? null,
-      listConversations: async (tenantId, userId) => store.conversations.filter((c) => c.tenantId === tenantId && c.userId === userId).reverse(),
+      listConversations: async (tenantId, userId) =>
+        store.conversations.filter((c) => c.tenantId === tenantId && c.userId === userId).reverse(),
       async touchConversation(id) {
         const c = store.conversations.find((x) => x.id === id);
         if (c) c.updatedAt = now();
       },
       async addMessage(row) {
-        const m = { id: randomUUID(), chart: null, sources: [], toolCalls: [], tokens: null, createdAt: now(), ...row } as ChatMessageModel;
+        const m = {
+          id: randomUUID(),
+          chart: null,
+          sources: [],
+          toolCalls: [],
+          tokens: null,
+          createdAt: now(),
+          ...row,
+        } as ChatMessageModel;
         store.messages.push(m);
         return m;
       },

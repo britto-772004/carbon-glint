@@ -48,7 +48,10 @@ export const fakeMailer = () => {
 /** Deterministic bag-of-words embedding (768-d) so vector search is meaningful in tests. */
 export const fakeEmbedding = (text: string): number[] => {
   const v = new Array<number>(768).fill(0);
-  for (const w of text.toLowerCase().split(/[^a-z0-9]+/).filter((x) => x.length > 2)) {
+  for (const w of text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((x) => x.length > 2)) {
     let h = 0;
     for (const ch of w) h = (h * 31 + ch.charCodeAt(0)) % 768;
     v[h]! += 1;
@@ -66,7 +69,14 @@ export const fakeAi = (reply = '', json: unknown = null) => {
     generateText: vi.fn(async () => reply),
     generateJson: vi.fn(async (_prompt?: string, _schema?: unknown, _opts?: unknown): Promise<unknown> => json),
     embed: vi.fn(async (texts: string[]) => texts.map(fakeEmbedding)),
-    runAgent: vi.fn(async (_opts?: unknown): Promise<{ text: string; toolCalls: Array<{ name: string; args: Record<string, unknown>; result: unknown }> }> => ({ text: '', toolCalls: [] })),
+    runAgent: vi.fn(
+      async (
+        _opts?: unknown,
+      ): Promise<{
+        text: string;
+        toolCalls: Array<{ name: string; args: Record<string, unknown>; result: unknown }>;
+      }> => ({ text: '', toolCalls: [] }),
+    ),
   };
   return ai as typeof ai & AiClient;
 };
