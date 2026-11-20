@@ -3,6 +3,7 @@ import {
   Background,
   Controls,
   Handle,
+  MarkerType,
   Position,
   ReactFlow,
   type Edge,
@@ -81,6 +82,13 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
     </Paper>
   );
 }
+/** Explicit stroke: React Flow's default edge colour comes from CSS variables that the app theme can blank out. */
+const EDGE_OPTIONS = {
+  type: 'smoothstep',
+  style: { stroke: '#64748b', strokeWidth: 2 },
+  markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b', width: 18, height: 18 },
+} as const;
+
 const nodeTypes = { bu: BuNode };
 
 export interface BuEmissionsTreeProps {
@@ -138,6 +146,7 @@ export function BuEmissionsTree({ nodes, edges, onNodesChange, isLoading, select
               nodeTypes={nodeTypes}
               onNodesChange={onNodesChange}
               nodesConnectable={false}
+              defaultEdgeOptions={EDGE_OPTIONS}
               fitView
               fitViewOptions={{ padding: 0.08, maxZoom: 1 }}
               minZoom={0.2}

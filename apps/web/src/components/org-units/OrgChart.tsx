@@ -1,9 +1,25 @@
-import { Background, Controls, MiniMap, ReactFlow, type Edge, type Node, type NodeChangeset } from '@xyflow/react';
+import {
+  Background,
+  Controls,
+  MarkerType,
+  MiniMap,
+  ReactFlow,
+  type Edge,
+  type Node,
+  type NodeChangeset,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Box from '@mui/material/Box';
 import { OrgUnitNode, type OrgUnitFlowNode } from './OrgUnitNode';
 
 const nodeTypes = { orgUnit: OrgUnitNode };
+
+/** Explicit stroke: React Flow's default edge colour comes from CSS variables that the app theme can blank out. */
+const EDGE_OPTIONS = {
+  type: 'smoothstep',
+  style: { stroke: '#64748b', strokeWidth: 2 },
+  markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b', width: 18, height: 18 },
+} as const;
 
 export interface OrgChartProps {
   nodes: OrgUnitFlowNode[];
@@ -33,6 +49,7 @@ export function OrgChart({ nodes, edges, onNodesChange, onNodeDrag, onNodeDragSt
         onNodeDrag={(_, node) => onNodeDrag(node)}
         onNodeDragStop={(_, node) => onNodeDragStop(node)}
         nodesConnectable={false}
+        defaultEdgeOptions={EDGE_OPTIONS}
         fitView
         fitViewOptions={{ padding: 0.2, minZoom: 0.5, maxZoom: 1 }}
         minZoom={0.2}
