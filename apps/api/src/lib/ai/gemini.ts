@@ -75,7 +75,13 @@ export function createGeminiClient(apiKey: string | undefined, model: string): A
         });
         const fnCalls = res.functionCalls ?? [];
         if (fnCalls.length === 0) return { text: res.text ?? '', toolCalls: calls };
-        contents.push({ role: 'model', parts: fnCalls.map((fc) => ({ functionCall: fc })) });
+        // Echo the model's own message back untouched: Gemini 3 models attach a `thoughtSignature` to each
+        // functionCall part and reject the follow-up turn (400) if it is dropped.
+        const modelContent = res.candidates?.[0]?.content as { parts?: Array<Record<string, unknown>> } | undefined;
+        contents.push({
+          role: 'model',
+          parts: modelContent?.parts?.length ? modelContent.parts : fnCalls.map((fc) => ({ functionCall: fc })),
+        });
         const responses = [];
         for (const fc of fnCalls) {
           const args = (fc.args ?? {}) as Record<string, unknown>;
