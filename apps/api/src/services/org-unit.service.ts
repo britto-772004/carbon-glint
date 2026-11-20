@@ -107,6 +107,9 @@ export const createOrgUnitService = ({ repositories: repos }: ServiceDeps): OrgU
       if ((await repos.orgUnits.countChildren(tenantId, id)) > 0) {
         throw new ConflictError('Move or delete its sub-units first.', { code: 'ORG_UNIT_HAS_CHILDREN' });
       }
+      if ((await repos.activities.countByOrgUnit(tenantId, id)) > 0) {
+        throw new ConflictError('Activities are recorded against this unit.', { code: 'ORG_UNIT_IN_USE' });
+      }
       await repos.orgUnits.delete(tenantId, id);
     },
   };

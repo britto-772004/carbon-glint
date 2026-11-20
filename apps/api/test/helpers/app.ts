@@ -7,7 +7,7 @@ import type { Controllers } from '../../src/openapi/types.js';
 import type { Repositories } from '../../src/repositories/index.js';
 import { createServices, type ServiceDeps, type Services } from '../../src/services/index.js';
 import type { AiClient } from '../../src/lib/gemini.js';
-import { fakeAi, fakeJobQueue, fakeRepositories } from './fakes.js';
+import { fakeAi, fakeJobQueue, fakeRepositories, memoryFiles } from './fakes.js';
 
 export const testConfig = (env: Record<string, string> = {}): Config =>
   loadConfig({
@@ -21,11 +21,14 @@ export const testConfig = (env: Record<string, string> = {}): Config =>
 
 /** Real services wired to fake (or provided) repositories — for service unit tests. */
 export function createTestServices(
-  overrides: Partial<Omit<ServiceDeps, 'jobs'>> & { jobs?: ReturnType<typeof fakeJobQueue> } = {},
+  overrides: Partial<Omit<ServiceDeps, 'jobs' | 'files'>> & {
+    jobs?: ReturnType<typeof fakeJobQueue>;
+    files?: ReturnType<typeof memoryFiles>;
+  } = {},
 ) {
   const jobs = overrides.jobs ?? fakeJobQueue();
   const repositories = (overrides.repositories ?? fakeRepositories()) as ReturnType<typeof fakeRepositories>;
-  const deps = { ai: fakeAi(), config: testConfig(), ...overrides, repositories, jobs };
+  const deps = { ai: fakeAi(), config: testConfig(), files: memoryFiles(), ...overrides, repositories, jobs };
   return { services: createServices(deps), ...deps };
 }
 
@@ -52,6 +55,7 @@ export function createTestApp(opts: TestAppOptions = {}) {
     repositories,
     ai,
     jobs,
+    files,
   } = createTestServices({
     config,
     ...(opts.repositories ? { repositories: opts.repositories } : {}),
@@ -63,5 +67,5 @@ export function createTestApp(opts: TestAppOptions = {}) {
     { config, logger: createLogger(config), services },
     { ...createControllers(services), ...opts.controllers },
   );
-  return { app, api: request(app), agent: () => request.agent(app), services, repositories, ai, jobs };
+  return { app, api: request(app), agent: () => request.agent(app), services, repositories, ai, jobs, files };
 }

@@ -8,3 +8,5 @@ export * from './user.model.js';
 export * from './auth-token.model.js';
 export * from './invitation.model.js';
 export * from './org-unit.model.js';
+export * from './ghg-category.model.js';
+export * from './activity.model.js';

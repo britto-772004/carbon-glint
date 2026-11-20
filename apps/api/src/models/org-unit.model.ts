@@ -20,7 +20,7 @@ export const orgUnits = pgTable(
     tenantId: uuid()
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
-    parentId: uuid().references((): AnyPgColumn => orgUnits.id, { onDelete: 'restrict' }),
+    parentId: uuid().references((): AnyPgColumn => orgUnits.id, { onDelete: 'no action' }), // checked at statement end: blocks deleting parents, allows tenant cascades
     name: text().notNull(),
     code: text().notNull(),
     type: orgUnitType().notNull().default('branch'),

@@ -22,6 +22,27 @@
       "when": 1795172658191,
       "tag": "0002_org_units",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795173137434,
+      "tag": "0003_activity_definitions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795173169285,
+      "tag": "0004_seed_ghg_taxonomy",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795173888954,
+      "tag": "0005_org_unit_parent_fk",
+      "breakpoints": true
     }
   ]
 }

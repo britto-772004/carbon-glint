@@ -1,5 +1,12 @@
 import type { Database, DbExecutor } from '../db/client.js';
 import type { Redis } from '../lib/redis.js';
+import {
+  createActivityDefinitionRepository,
+  type ActivityDefinitionRepository,
+} from './activity-definition.repository.js';
+import { createActivityRepository, type ActivityRepository } from './activity.repository.js';
+import { createDataSourceRepository, type DataSourceRepository } from './data-source.repository.js';
+import { createGhgCategoryRepository, type GhgCategoryRepository } from './ghg-category.repository.js';
 import { createAuthTokenRepository, type AuthTokenRepository } from './auth-token.repository.js';
 import { createIndustryRepository, type IndustryRepository } from './industry.repository.js';
 import { createInvitationRepository, type InvitationRepository } from './invitation.repository.js';
@@ -23,6 +30,10 @@ export interface Repositories {
   authTokens: AuthTokenRepository;
   invitations: InvitationRepository;
   orgUnits: OrgUnitRepository;
+  ghgCategories: GhgCategoryRepository;
+  activityDefinitions: ActivityDefinitionRepository;
+  dataSources: DataSourceRepository;
+  activities: ActivityRepository;
   sessions: SessionRepository;
   rateLimits: RateLimitRepository;
   /** Run `fn` in one database transaction; the repositories passed to it all use that transaction. */
@@ -37,6 +48,10 @@ const build = (db: DbExecutor, stores: DataStores): Repositories => ({
   authTokens: createAuthTokenRepository(db),
   invitations: createInvitationRepository(db),
   orgUnits: createOrgUnitRepository(db),
+  ghgCategories: createGhgCategoryRepository(db),
+  activityDefinitions: createActivityDefinitionRepository(db),
+  dataSources: createDataSourceRepository(db),
+  activities: createActivityRepository(db),
   sessions: createSessionRepository(stores.redis),
   rateLimits: createRateLimitRepository(stores.redis),
   transaction: (fn) => stores.db.transaction((tx) => fn(build(tx, stores))),

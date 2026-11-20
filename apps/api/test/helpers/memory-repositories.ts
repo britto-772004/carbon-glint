@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import type {
+  ActivityDefinitionModel,
+  ActivityModel,
   AuthTokenModel,
+  DataSourceModel,
+  GhgCategoryModel,
   IndustryModel,
   InvitationModel,
   NewOrgUnitModel,
@@ -25,6 +29,11 @@ export interface MemoryStore {
   authTokens: AuthTokenModel[];
   invitations: InvitationModel[];
   orgUnits: OrgUnitModel[];
+  ghgCategories: GhgCategoryModel[];
+  industryCategories: Array<{ industryId: string; categoryId: string; rank: number }>;
+  activityDefinitions: ActivityDefinitionModel[];
+  dataSources: DataSourceModel[];
+  activities: ActivityModel[];
   sessions: Map<string, { record: SessionRecord; expiresAt: number }>;
   rateCounters: Map<string, { count: number; resetAt: number }>;
 }
@@ -32,6 +41,26 @@ export interface MemoryStore {
 export const SEED_INDUSTRIES: IndustryModel[] = [
   { id: '11111111-1111-4111-8111-111111111111', code: 'it_software', name: 'IT & software services' },
   { id: '22222222-2222-4222-8222-222222222222', code: 'manufacturing', name: 'Manufacturing' },
+];
+
+const cat = (id: string, scope: number, code: string, name: string, sortOrder: number): GhgCategoryModel => ({
+  id,
+  tenantId: null,
+  scope,
+  code,
+  name,
+  description: '',
+  sortOrder,
+  createdAt: new Date('2026-01-01'),
+});
+/** A trimmed copy of the seeded GHG taxonomy. */
+export const SEED_CATEGORIES: GhgCategoryModel[] = [
+  cat('c1000000-0000-4000-8000-000000000001', 1, 'S1_STATIONARY', 'Stationary combustion', 0),
+  cat('c1000000-0000-4000-8000-000000000002', 1, 'S1_MOBILE', 'Mobile combustion', 1),
+  cat('c1000000-0000-4000-8000-000000000003', 1, 'S1_FUGITIVE', 'Fugitive emissions', 3),
+  cat('c2000000-0000-4000-8000-000000000001', 2, 'S2_ELECTRICITY', 'Purchased electricity', 4),
+  cat('c3000000-0000-4000-8000-000000000006', 3, 'S3_C6', '6. Business travel', 12),
+  cat('c3000000-0000-4000-8000-000000000007', 3, 'S3_C7', '7. Employee commuting', 13),
 ];
 
 export function createMemoryStore(): MemoryStore {
@@ -42,6 +71,16 @@ export function createMemoryStore(): MemoryStore {
     authTokens: [],
     invitations: [],
     orgUnits: [],
+    ghgCategories: structuredClone(SEED_CATEGORIES),
+    // IT & software: electricity, travel, commuting recommended
+    industryCategories: [
+      { industryId: SEED_INDUSTRIES[0]!.id, categoryId: SEED_CATEGORIES[3]!.id, rank: 0 },
+      { industryId: SEED_INDUSTRIES[0]!.id, categoryId: SEED_CATEGORIES[4]!.id, rank: 1 },
+      { industryId: SEED_INDUSTRIES[0]!.id, categoryId: SEED_CATEGORIES[5]!.id, rank: 2 },
+    ],
+    activityDefinitions: [],
+    dataSources: [],
+    activities: [],
     sessions: new Map(),
     rateCounters: new Map(),
   };
@@ -52,6 +91,13 @@ const now = () => new Date();
 export function createMemoryRepositories(store: MemoryStore = createMemoryStore()): Repositories & {
   store: MemoryStore;
 } {
+  const defRow = (definition: ActivityDefinitionModel) => ({
+    definition,
+    category: store.ghgCategories.find((c) => c.id === definition.categoryId)!,
+    dataSourceCount: store.dataSources.filter((x) => x.activityDefinitionId === definition.id).length,
+    activityCount: store.activities.filter((x) => x.activityDefinitionId === definition.id).length,
+  });
+
   const repos: Repositories & { store: MemoryStore } = {
     store,
     system: { pingDatabase: vi.fn(async () => true), pingRedis: vi.fn(async () => true) },
@@ -212,6 +258,145 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
       },
       countChildren: async (tenantId, id) =>
         store.orgUnits.filter((o) => o.tenantId === tenantId && o.parentId === id).length,
+    },
+
+    ghgCategories: {
+      async listForTenant(tenantId, industryId, scope) {
+        return store.ghgCategories
+          .filter((c) => (c.tenantId === null || c.tenantId === tenantId) && (!scope || c.scope === scope))
+          .map((category) => ({
+            category,
+            rank:
+              store.industryCategories.find((ic) => ic.categoryId === category.id && ic.industryId === industryId)
+                ?.rank ?? null,
+          }));
+      },
+      findVisible: async (tenantId, id) =>
+        store.ghgCategories.find((c) => c.id === id && (c.tenantId === null || c.tenantId === tenantId)) ?? null,
+      findByCode: async (tenantId, code) =>
+        store.ghgCategories.find((c) => c.code === code && c.tenantId === tenantId) ?? null,
+      async create(data) {
+        const row = {
+          id: randomUUID(),
+          description: '',
+          sortOrder: 0,
+          createdAt: now(),
+          tenantId: null,
+          ...data,
+        } as GhgCategoryModel;
+        store.ghgCategories.push(row);
+        return row;
+      },
+    },
+
+    activityDefinitions: {
+      async list(tenantId, { scope, status }) {
+        return store.activityDefinitions
+          .filter((d) => d.tenantId === tenantId && (!scope || d.scope === scope) && (!status || d.status === status))
+          .reverse()
+          .map(defRow);
+      },
+      async findById(tenantId, id) {
+        const d = store.activityDefinitions.find((x) => x.tenantId === tenantId && x.id === id);
+        return d ? defRow(d) : null;
+      },
+      async create(data) {
+        const row = {
+          id: randomUUID(),
+          description: '',
+          defaultOrgUnitId: null,
+          status: 'draft',
+          publishedAt: null,
+          createdBy: null,
+          createdAt: now(),
+          updatedAt: now(),
+          ...data,
+        } as ActivityDefinitionModel;
+        store.activityDefinitions.push(row);
+        return row;
+      },
+      async update(tenantId, id, data) {
+        const row = store.activityDefinitions.find((x) => x.tenantId === tenantId && x.id === id);
+        if (!row) return null;
+        Object.assign(row, data, { updatedAt: now() });
+        return row;
+      },
+      async delete(tenantId, id) {
+        const before = store.activityDefinitions.length;
+        store.activityDefinitions = store.activityDefinitions.filter((x) => !(x.tenantId === tenantId && x.id === id));
+        store.dataSources = store.dataSources.filter((x) => x.activityDefinitionId !== id);
+        store.activities = store.activities.filter((x) => x.activityDefinitionId !== id);
+        return store.activityDefinitions.length < before;
+      },
+    },
+
+    dataSources: {
+      listByDefinition: async (tenantId, adId) =>
+        store.dataSources.filter((x) => x.tenantId === tenantId && x.activityDefinitionId === adId),
+      findById: async (tenantId, id) => store.dataSources.find((x) => x.tenantId === tenantId && x.id === id) ?? null,
+      findForJob: async (id) => store.dataSources.find((x) => x.id === id) ?? null,
+      async create(data) {
+        const row = {
+          sheets: [],
+          sheetName: null,
+          headerRow: 1,
+          columns: [],
+          preview: [],
+          rowCount: 0,
+          mapping: null,
+          mappingMode: null,
+          status: 'uploaded',
+          importedCount: 0,
+          errorCount: 0,
+          errors: [],
+          importedAt: null,
+          createdAt: now(),
+          updatedAt: now(),
+          id: randomUUID(),
+          ...data,
+        } as DataSourceModel;
+        store.dataSources.push(row);
+        return row;
+      },
+      async update(id, data) {
+        const row = store.dataSources.find((x) => x.id === id);
+        if (!row) return null;
+        Object.assign(row, data, { updatedAt: now() });
+        return row;
+      },
+      async delete(tenantId, id) {
+        const before = store.dataSources.length;
+        store.dataSources = store.dataSources.filter((x) => !(x.tenantId === tenantId && x.id === id));
+        store.activities = store.activities.filter((x) => x.dataSourceId !== id);
+        return store.dataSources.length < before;
+      },
+    },
+
+    activities: {
+      async replaceForDataSource(dataSourceId, rows) {
+        store.activities = store.activities.filter((a) => a.dataSourceId !== dataSourceId);
+        for (const r of rows) {
+          store.activities.push({
+            id: randomUUID(),
+            createdAt: now(),
+            location: null,
+            orgUnitId: null,
+            spend: null,
+            currency: null,
+            extra: {},
+            ...r,
+          } as ActivityModel);
+        }
+        return rows.length;
+      },
+      async listByDefinition(tenantId, adId, { limit, offset }) {
+        const all = store.activities.filter((a) => a.tenantId === tenantId && a.activityDefinitionId === adId);
+        return { items: all.slice(offset, offset + limit), total: all.length };
+      },
+      allByDefinition: async (tenantId, adId) =>
+        store.activities.filter((a) => a.tenantId === tenantId && a.activityDefinitionId === adId),
+      countByOrgUnit: async (tenantId, orgUnitId) =>
+        store.activities.filter((a) => a.tenantId === tenantId && a.orgUnitId === orgUnitId).length,
     },
 
     sessions: {

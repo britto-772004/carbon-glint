@@ -1,4 +1,4 @@
-import type { CookieOptions, Request, Response } from 'express';
+import type { CookieOptions, Response } from 'express';
 import { UnauthorizedError } from '../errors/domain-errors.js';
 import { SESSION_ABSOLUTE_SECONDS } from '../services/session.js';
 import type { Actor, RequestContext } from '../services/types.js';
@@ -21,12 +21,12 @@ export interface ControllerOptions {
 }
 
 /** The signed-in actor; only call from operations that declare `security: cookieAuth`. */
-export const actorOf = (req: Request): Actor => {
+export const actorOf = (req: { auth?: Actor }): Actor => {
   if (!req.auth) throw new UnauthorizedError('Not signed in.');
   return req.auth;
 };
 
-export const contextOf = (req: Request): RequestContext => ({ ip: req.ip ?? 'unknown' });
+export const contextOf = (req: { ip?: string | undefined }): RequestContext => ({ ip: req.ip ?? 'unknown' });
 
 const cookieOptions = (opts: ControllerOptions): CookieOptions => ({
   httpOnly: true,

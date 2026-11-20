@@ -68,6 +68,8 @@ export function createApp(
       // Catch controller/contract drift everywhere except prod.
       validateResponses: config.NODE_ENV !== 'production',
       validateApiSpec: true,
+      // multipart/form-data uploads (in memory; the service stores them via FileStorage)
+      fileUploader: { limits: { fileSize: 20 * 1024 * 1024, files: 1 } },
       validateSecurity: {
         handlers: {
           // Scopes on cookieAuth are roles: [] = any signed-in user, otherwise the user's role must be listed.

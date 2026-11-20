@@ -30,6 +30,8 @@ tags:
     description: Reference data (industries, …)
   - name: org-units
     description: Business units (branches, plants, campuses) as a tree
+  - name: activities
+    description: GHG taxonomy, Activity Definitions, data sources and activity rows
 # Default: public. Protected operations declare `security` explicitly.
 # cookieAuth "scopes" are roles: [] = any signed-in user, [admin] = tenant admin, [superadmin] = platform operator.
 security: []
@@ -633,6 +635,391 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /ghg-categories:
+    get:
+      operationId: listGhgCategories
+      tags: [activities]
+      summary: GHG categories (system + the company's custom ones), with industry recommendations
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            $ref: '#/components/schemas/Scope'
+      responses:
+        '200':
+          description: Categories ordered by scope, recommendation rank, then name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GhgCategory'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createGhgCategory
+      tags: [activities]
+      summary: Add a custom category under a scope
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGhgCategoryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GhgCategory'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /activity-definitions:
+    get:
+      operationId: listActivityDefinitions
+      tags: [activities]
+      summary: Activity Definitions
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            $ref: '#/components/schemas/Scope'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ActivityDefinitionStatus'
+      responses:
+        '200':
+          description: Activity Definitions (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityDefinition'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createActivityDefinition
+      tags: [activities]
+      summary: Create an Activity Definition (draft)
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActivityDefinitionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityDefinition'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /activity-definitions/{activityDefinitionId}:
+    get:
+      operationId: getActivityDefinition
+      tags: [activities]
+      summary: One Activity Definition with its data sources
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+      responses:
+        '200':
+          description: Activity Definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityDefinitionDetail'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      operationId: updateActivityDefinition
+      tags: [activities]
+      summary: Update an Activity Definition (scope/category only while draft)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateActivityDefinitionRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityDefinition'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: deleteActivityDefinition
+      tags: [activities]
+      summary: Delete a draft Activity Definition and its data
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /activity-definitions/{activityDefinitionId}/publish:
+    post:
+      operationId: publishActivityDefinition
+      tags: [activities]
+      summary: Publish — locks the definition and starts emission factor matching and calculation
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+      responses:
+        '200':
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityDefinition'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /activity-definitions/{activityDefinitionId}/data-sources:
+    post:
+      operationId: uploadDataSource
+      tags: [activities]
+      summary: Upload a CSV or XLSX source sheet
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Parsed data source (sheets, detected header, columns, preview, suggested mapping)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /activity-definitions/{activityDefinitionId}/activities:
+    get:
+      operationId: listActivities
+      tags: [activities]
+      summary: Activity rows of a definition (paginated)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Page of activities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityPage'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /data-sources/{dataSourceId}:
+    get:
+      operationId: getDataSource
+      tags: [activities]
+      summary: Data source status (poll while importing)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/DataSourceId'
+      responses:
+        '200':
+          description: Data source
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      operationId: updateDataSourceLayout
+      tags: [activities]
+      summary: Choose another sheet or header row (re-parses the stored file)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/DataSourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDataSourceLayoutRequest'
+      responses:
+        '200':
+          description: Re-parsed data source
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: deleteDataSource
+      tags: [activities]
+      summary: Delete a data source and its imported activities
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/DataSourceId'
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /data-sources/{dataSourceId}/suggest-mapping:
+    post:
+      operationId: suggestColumnMapping
+      tags: [activities]
+      summary: Infer the column mapping (Gemini when configured, header heuristics otherwise)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/DataSourceId'
+      responses:
+        '200':
+          description: Suggested mapping
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MappingSuggestion'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /data-sources/{dataSourceId}/import:
+    post:
+      operationId: importDataSource
+      tags: [activities]
+      summary: Validate rows with the confirmed mapping and import them (background job)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/DataSourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportDataSourceRequest'
+      responses:
+        '202':
+          description: Import started — poll getDataSource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /templates/activity-data:
+    get:
+      operationId: downloadActivityTemplate
+      tags: [activities]
+      summary: Sample activity data template (XLSX or CSV)
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [xlsx, csv]
+            default: xlsx
+      responses:
+        '200':
+          description: Template file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     cookieAuth:
@@ -641,6 +1028,20 @@ components:
       name: cg_session
       description: httpOnly session cookie set by logIn / verifyEmail / acceptInvitation.
   parameters:
+    ActivityDefinitionId:
+      name: activityDefinitionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DataSourceId:
+      name: dataSourceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     OrgUnitId:
       name: orgUnitId
       in: path
@@ -694,6 +1095,404 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    Scope:
+      type: integer
+      enum: [1, 2, 3]
+    IsoDate:
+      type: string
+      format: date
+    GhgCategory:
+      type: object
+      additionalProperties: false
+      required: [id, scope, code, name, description, custom, recommended, rank]
+      properties:
+        id:
+          type: string
+          format: uuid
+        scope:
+          $ref: '#/components/schemas/Scope'
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        custom:
+          type: boolean
+          description: Created by this company
+        recommended:
+          type: boolean
+          description: Recommended for the company's industry
+        rank:
+          type: [integer, 'null']
+    CreateGhgCategoryRequest:
+      type: object
+      additionalProperties: false
+      required: [scope, name]
+      properties:
+        scope:
+          $ref: '#/components/schemas/Scope'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+    ActivityDefinitionStatus:
+      type: string
+      enum: [draft, published, archived]
+    CategoryRef:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, scope]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        scope:
+          $ref: '#/components/schemas/Scope'
+    ActivityDefinition:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          name,
+          description,
+          scope,
+          category,
+          defaultOrgUnitId,
+          periodStart,
+          periodEnd,
+          status,
+          publishedAt,
+          dataSourceCount,
+          activityCount,
+          createdAt,
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        scope:
+          $ref: '#/components/schemas/Scope'
+        category:
+          $ref: '#/components/schemas/CategoryRef'
+        defaultOrgUnitId:
+          type: [string, 'null']
+          format: uuid
+        periodStart:
+          $ref: '#/components/schemas/IsoDate'
+        periodEnd:
+          $ref: '#/components/schemas/IsoDate'
+        status:
+          $ref: '#/components/schemas/ActivityDefinitionStatus'
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        dataSourceCount:
+          type: integer
+          minimum: 0
+        activityCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+    ActivityDefinitionDetail:
+      type: object
+      additionalProperties: false
+      required: [definition, dataSources]
+      properties:
+        definition:
+          $ref: '#/components/schemas/ActivityDefinition'
+        dataSources:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataSource'
+    CreateActivityDefinitionRequest:
+      type: object
+      additionalProperties: false
+      required: [name, scope, categoryId, periodStart, periodEnd]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 2000
+        scope:
+          $ref: '#/components/schemas/Scope'
+        categoryId:
+          type: string
+          format: uuid
+        defaultOrgUnitId:
+          type: [string, 'null']
+          format: uuid
+        periodStart:
+          $ref: '#/components/schemas/IsoDate'
+        periodEnd:
+          $ref: '#/components/schemas/IsoDate'
+    UpdateActivityDefinitionRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 2000
+        scope:
+          $ref: '#/components/schemas/Scope'
+        categoryId:
+          type: string
+          format: uuid
+        defaultOrgUnitId:
+          type: [string, 'null']
+          format: uuid
+        periodStart:
+          $ref: '#/components/schemas/IsoDate'
+        periodEnd:
+          $ref: '#/components/schemas/IsoDate'
+    ColumnMapping:
+      type: object
+      additionalProperties: false
+      description: Target GHG field → source column name (null = not mapped). description, measure and unit are required to import.
+      required: [description, measure, unit, location, orgUnit, periodStart, periodEnd, spend, currency]
+      properties:
+        description:
+          type: [string, 'null']
+        measure:
+          type: [string, 'null']
+        unit:
+          type: [string, 'null']
+        location:
+          type: [string, 'null']
+        orgUnit:
+          type: [string, 'null']
+        periodStart:
+          type: [string, 'null']
+        periodEnd:
+          type: [string, 'null']
+        spend:
+          type: [string, 'null']
+        currency:
+          type: [string, 'null']
+    RowError:
+      type: object
+      additionalProperties: false
+      required: [row, field, message]
+      properties:
+        row:
+          type: integer
+          description: 1-based row number in the sheet
+        field:
+          type: string
+        message:
+          type: string
+    DataSourceStatus:
+      type: string
+      enum: [uploaded, importing, imported, failed]
+    DataSource:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          activityDefinitionId,
+          fileName,
+          fileType,
+          fileSize,
+          sheets,
+          sheetName,
+          headerRow,
+          columns,
+          preview,
+          rowCount,
+          mapping,
+          mappingMode,
+          status,
+          importedCount,
+          errorCount,
+          errors,
+          importedAt,
+          createdAt,
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        activityDefinitionId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        fileType:
+          type: string
+          enum: [csv, xlsx]
+        fileSize:
+          type: integer
+        sheets:
+          type: array
+          items:
+            type: string
+        sheetName:
+          type: [string, 'null']
+        headerRow:
+          type: integer
+          minimum: 1
+        columns:
+          type: array
+          items:
+            type: string
+        preview:
+          description: First rows below the header (aligned to columns)
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        rowCount:
+          type: integer
+        mapping:
+          oneOf:
+            - $ref: '#/components/schemas/ColumnMapping'
+            - type: 'null'
+        mappingMode:
+          type: [string, 'null']
+          enum: [ai, manual, null]
+        status:
+          $ref: '#/components/schemas/DataSourceStatus'
+        importedCount:
+          type: integer
+        errorCount:
+          type: integer
+        errors:
+          description: First validation errors (up to 500)
+          type: array
+          items:
+            $ref: '#/components/schemas/RowError'
+        importedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    UpdateDataSourceLayoutRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        sheetName:
+          type: string
+          minLength: 1
+        headerRow:
+          type: integer
+          minimum: 1
+          maximum: 50
+    MappingSuggestion:
+      type: object
+      additionalProperties: false
+      required: [mapping, confidence, source, reasoning]
+      properties:
+        mapping:
+          $ref: '#/components/schemas/ColumnMapping'
+        confidence:
+          type: object
+          description: 0–1 confidence per field
+          additionalProperties:
+            type: number
+            minimum: 0
+            maximum: 1
+        source:
+          type: string
+          enum: [ai, heuristic]
+        reasoning:
+          type: string
+    ImportDataSourceRequest:
+      type: object
+      additionalProperties: false
+      required: [mapping, mappingMode]
+      properties:
+        mapping:
+          $ref: '#/components/schemas/ColumnMapping'
+        mappingMode:
+          type: string
+          enum: [ai, manual]
+        onlyValidRows:
+          type: boolean
+          default: false
+          description: Import valid rows and skip invalid ones (otherwise any error aborts the import)
+    Activity:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          dataSourceId,
+          rowNumber,
+          description,
+          location,
+          measure,
+          unit,
+          orgUnitId,
+          periodStart,
+          periodEnd,
+          spend,
+          currency,
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        dataSourceId:
+          type: string
+          format: uuid
+        rowNumber:
+          type: integer
+        description:
+          type: string
+        location:
+          type: [string, 'null']
+        measure:
+          type: number
+        unit:
+          type: string
+        orgUnitId:
+          type: [string, 'null']
+          format: uuid
+        periodStart:
+          $ref: '#/components/schemas/IsoDate'
+        periodEnd:
+          $ref: '#/components/schemas/IsoDate'
+        spend:
+          type: [number, 'null']
+        currency:
+          type: [string, 'null']
+    ActivityPage:
+      type: object
+      additionalProperties: false
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Activity'
+        total:
+          type: integer
     OrgUnitType:
       type: string
       enum: [hq, branch, plant, office, warehouse, campus, store, other]

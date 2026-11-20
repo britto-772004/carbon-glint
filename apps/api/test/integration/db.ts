@@ -24,21 +24,13 @@ export function createTestDatabase(): DatabaseHandle {
   return createDatabase(TEST_DATABASE_URL);
 }
 
-/** Reference data seeded by migrations — never truncated. */
-export const REFERENCE_TABLES = ['industries'];
-
-/** Empties every tenant-data table (keeps schema, migrations and reference data). Call in beforeEach. */
+/**
+ * Removes all tenant data while keeping schema, migrations and reference data (industries, system GHG categories,
+ * emission factors). Deleting tenants cascades through every tenant-owned table; then tenant-less users (super admins).
+ */
 export async function resetDatabase({ db }: DatabaseHandle): Promise<void> {
-  await db.execute(sql`
-    do $$
-    declare r record;
-    begin
-      for r in select tablename from pg_tables
-               where schemaname = 'public' and tablename <> all (${sql.raw(`array['${REFERENCE_TABLES.join("','")}']`)}) loop
-        execute 'truncate table ' || quote_ident(r.tablename) || ' restart identity cascade';
-      end loop;
-    end $$;
-  `);
+  await db.execute(sql`delete from tenants`);
+  await db.execute(sql`delete from users`);
 }
 
 export interface TestStores extends DataStores {

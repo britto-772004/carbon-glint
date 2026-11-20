@@ -5,11 +5,13 @@ import { createMailer } from './lib/mailer.js';
 import { bullConnection } from './lib/redis.js';
 import { QUEUE_NAME } from './jobs/queue.js';
 import { createJobHandlers, dispatchJob } from './jobs/handlers.js';
+import { createRuntime } from './runtime.js';
 
 /** Background worker process (pm2: carbon-glint-worker). One job at a time to stay within 1 GB RAM. */
 const config = loadConfig();
 const logger = createLogger(config);
-const handlers = createJobHandlers({ mailer: createMailer(config, logger), logger });
+const runtime = createRuntime(config, logger);
+const handlers = createJobHandlers({ mailer: createMailer(config, logger), logger, services: runtime.services });
 
 const worker = new Worker(QUEUE_NAME, (job) => dispatchJob(handlers, job.name, job.data), {
   connection: bullConnection(config.REDIS_URL),
@@ -25,6 +27,7 @@ worker.on('ready', () => logger.info({ queue: QUEUE_NAME }, 'worker ready'));
 const shutdown = async (signal: string) => {
   logger.info({ signal }, 'worker shutting down');
   await worker.close();
+  await runtime.close();
   process.exit(0);
 };
 process.on('SIGTERM', () => void shutdown('SIGTERM'));

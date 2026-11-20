@@ -3,6 +3,10 @@ import type { EmailMessage } from '../lib/mailer.js';
 /** Every background job: name → payload. Add new jobs here, then a handler in ./handlers.ts. */
 export interface JobPayloads {
   'email.send': EmailMessage;
+  /** Validate + import a data source's rows (heavy: runs in the worker). */
+  'datasource.import': { tenantId: string; dataSourceId: string; onlyValidRows: boolean };
+  /** Match emission factors and calculate CO2e for an Activity Definition. */
+  'calculation.run': { tenantId: string; activityDefinitionId: string };
 }
 
 export type JobName = keyof JobPayloads;

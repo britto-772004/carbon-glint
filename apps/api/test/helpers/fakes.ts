@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { vi } from 'vitest';
 import type { JobPayloads, JobQueue } from '../../src/jobs/types.js';
 import type { AiClient } from '../../src/lib/gemini.js';
@@ -45,8 +46,13 @@ export const fakeMailer = () => {
 };
 
 /** Gemini is never called for real in tests. `generateText` is a vi.fn so prompts can be asserted. */
-export const fakeAi = (reply = ''): AiClient & { generateText: ReturnType<typeof vi.fn> } => ({
+export const fakeAi = (
+  reply = '',
+  json: unknown = null,
+): AiClient & { generateText: ReturnType<typeof vi.fn>; generateJson: ReturnType<typeof vi.fn> } => ({
+  available: json !== null || reply !== '',
   generateText: vi.fn(async () => reply),
+  generateJson: vi.fn(async () => json) as AiClient['generateJson'] & ReturnType<typeof vi.fn>,
 });
 
 /** Pulls the token out of a link in an email body (verification / invitation). */
@@ -54,4 +60,20 @@ export const tokenFromEmail = (text: string): string => {
   const m = text.match(/token=([^\s&]+)/);
   if (!m) throw new Error(`No token link in email:\n${text}`);
   return decodeURIComponent(m[1]!);
+};
+
+/** In-memory FileStorage. */
+export const memoryFiles = () => {
+  const data = new Map<string, Buffer>();
+  return {
+    data,
+    put: vi.fn(async (key: string, value: Buffer | Uint8Array | string) => void data.set(key, Buffer.from(value))),
+    read: (key: string) => {
+      const v = data.get(key);
+      if (!v) throw new Error(`missing file ${key}`);
+      return Readable.from([v]);
+    },
+    exists: async (key: string) => data.has(key),
+    remove: vi.fn(async (key: string) => void data.delete(key)),
+  };
 };
