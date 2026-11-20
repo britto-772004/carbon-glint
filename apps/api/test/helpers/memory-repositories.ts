@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import type {
   CalculationModel,
+  ChatConversationModel,
+  ChatMessageModel,
+  EmbeddingModel,
   ReportModel,
   EfOverrideModel,
   EfSourceModel,
@@ -44,6 +47,9 @@ export interface MemoryStore {
   calculations: CalculationModel[];
   efOverrides: EfOverrideModel[];
   reports: ReportModel[];
+  embeddings: EmbeddingModel[];
+  conversations: ChatConversationModel[];
+  messages: ChatMessageModel[];
   sessions: Map<string, { record: SessionRecord; expiresAt: number }>;
   rateCounters: Map<string, { count: number; resetAt: number }>;
 }
@@ -96,6 +102,9 @@ export function createMemoryStore(): MemoryStore {
     calculations: [],
     efOverrides: [],
     reports: [],
+    embeddings: [],
+    conversations: [],
+    messages: [],
     sessions: new Map(),
     rateCounters: new Map(),
   };
@@ -602,6 +611,44 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
         store.reports = store.reports.filter((r) => !(r.tenantId === tenantId && r.id === id));
         return store.reports.length < before;
       },
+    },
+
+    assistant: {
+      async replaceEmbeddings(tenantId, rows) {
+        store.embeddings = store.embeddings.filter((e) => e.tenantId !== tenantId);
+        for (const r of rows) store.embeddings.push({ id: randomUUID(), updatedAt: now(), ...r, tenantId } as EmbeddingModel);
+        return rows.length;
+      },
+      async searchEmbeddings(tenantId, vector, k) {
+        const cos = (a: number[], b: number[]) => {
+          let dot = 0, na = 0, nb = 0;
+          for (let i = 0; i < a.length; i++) { dot += a[i]! * (b[i] ?? 0); na += a[i]! ** 2; nb += (b[i] ?? 0) ** 2; }
+          return na && nb ? 1 - dot / Math.sqrt(na * nb) : 1;
+        };
+        return store.embeddings
+          .filter((e) => e.tenantId === tenantId)
+          .map((e) => ({ sourceType: e.sourceType, sourceId: e.sourceId, content: e.content, distance: cos(vector, e.embedding) }))
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, k);
+      },
+      async createConversation(tenantId, userId, title) {
+        const c = { id: randomUUID(), tenantId, userId, title, createdAt: now(), updatedAt: now() };
+        store.conversations.push(c);
+        return c;
+      },
+      findConversation: async (tenantId, userId, id) =>
+        store.conversations.find((c) => c.tenantId === tenantId && c.userId === userId && c.id === id) ?? null,
+      listConversations: async (tenantId, userId) => store.conversations.filter((c) => c.tenantId === tenantId && c.userId === userId).reverse(),
+      async touchConversation(id) {
+        const c = store.conversations.find((x) => x.id === id);
+        if (c) c.updatedAt = now();
+      },
+      async addMessage(row) {
+        const m = { id: randomUUID(), chart: null, sources: [], toolCalls: [], tokens: null, createdAt: now(), ...row } as ChatMessageModel;
+        store.messages.push(m);
+        return m;
+      },
+      listMessages: async (conversationId) => store.messages.filter((m) => m.conversationId === conversationId),
     },
 
     sessions: {

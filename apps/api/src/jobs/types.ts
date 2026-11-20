@@ -9,6 +9,8 @@ export interface JobPayloads {
   'calculation.run': { tenantId: string; activityDefinitionId: string };
   /** Render a report PDF. */
   'report.generate': { tenantId: string; reportId: string };
+  /** Rebuild a tenant's assistant knowledge index (embeddings). */
+  'assistant.index': { tenantId: string };
 }
 
 export type JobName = keyof JobPayloads;

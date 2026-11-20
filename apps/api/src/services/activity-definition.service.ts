@@ -122,6 +122,7 @@ export const createActivityDefinitionService = ({
         await repos.activityDefinitions.update(tenantId, id, { status: 'published', publishedAt: new Date() });
       }
       await jobs.enqueue('calculation.run', { tenantId, activityDefinitionId: id });
+      await jobs.enqueue('assistant.index', { tenantId }, { delayMs: 60_000 }); // refresh knowledge after calculation
       return toActivityDefinitionDto(await load(tenantId, id));
     },
 

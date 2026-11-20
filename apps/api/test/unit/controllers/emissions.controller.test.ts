@@ -103,7 +103,7 @@ describe('calculation + emissions API', () => {
 
   it('uses Gemini to choose among candidates (never inventing a factor)', async () => {
     const ai = fakeAi('', null);
-    ai.generateJson.mockImplementation(async (prompt: string) => {
+    ai.generateJson.mockImplementation(async (prompt = "") => {
       const ids = [...prompt.matchAll(/^([0-9a-f-]{36}) \|/gm)].map((m) => m[1]);
       return { factorId: ids[0] ?? null, confidence: 0.93, rationale: 'Best fuel match.' };
     });

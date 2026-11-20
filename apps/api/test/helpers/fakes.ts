@@ -45,21 +45,30 @@ export const fakeMailer = () => {
   };
 };
 
-/** Gemini is never called for real in tests. `generateText` is a vi.fn so prompts can be asserted. */
-export const fakeAi = (
-  reply = '',
-  json: unknown = null,
-): AiClient & { generateText: ReturnType<typeof vi.fn>; generateJson: ReturnType<typeof vi.fn> } => ({
-  available: json !== null || reply !== '',
-  generateText: vi.fn(async () => reply),
-  generateJson: vi.fn(async () => json) as AiClient['generateJson'] & ReturnType<typeof vi.fn>,
-});
+/** Deterministic bag-of-words embedding (768-d) so vector search is meaningful in tests. */
+export const fakeEmbedding = (text: string): number[] => {
+  const v = new Array<number>(768).fill(0);
+  for (const w of text.toLowerCase().split(/[^a-z0-9]+/).filter((x) => x.length > 2)) {
+    let h = 0;
+    for (const ch of w) h = (h * 31 + ch.charCodeAt(0)) % 768;
+    v[h]! += 1;
+  }
+  return v;
+};
 
-/** Pulls the token out of a link in an email body (verification / invitation). */
-export const tokenFromEmail = (text: string): string => {
-  const m = text.match(/token=([^\s&]+)/);
-  if (!m) throw new Error(`No token link in email:\n${text}`);
-  return decodeURIComponent(m[1]!);
+/**
+ * Gemini is never called for real in tests. `generateText`, `generateJson` and `runAgent` are vi.fn mocks
+ * (override per test); `embed` is deterministic.
+ */
+export const fakeAi = (reply = '', json: unknown = null) => {
+  const ai = {
+    available: json !== null || reply !== '',
+    generateText: vi.fn(async () => reply),
+    generateJson: vi.fn(async (_prompt?: string, _schema?: unknown, _opts?: unknown): Promise<unknown> => json),
+    embed: vi.fn(async (texts: string[]) => texts.map(fakeEmbedding)),
+    runAgent: vi.fn(async (_opts?: unknown): Promise<{ text: string; toolCalls: Array<{ name: string; args: Record<string, unknown>; result: unknown }> }> => ({ text: '', toolCalls: [] })),
+  };
+  return ai as typeof ai & AiClient;
 };
 
 /** In-memory FileStorage. */
@@ -76,4 +85,11 @@ export const memoryFiles = () => {
     exists: async (key: string) => data.has(key),
     remove: vi.fn(async (key: string) => void data.delete(key)),
   };
+};
+
+/** Pulls the token out of a link in an email body (verification / invitation). */
+export const tokenFromEmail = (text: string): string => {
+  const m = text.match(/token=([^\s&]+)/);
+  if (!m) throw new Error(`No token link in email:\n${text}`);
+  return decodeURIComponent(m[1]!);
 };

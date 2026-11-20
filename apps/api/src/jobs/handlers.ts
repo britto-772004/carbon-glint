@@ -20,6 +20,10 @@ export const createJobHandlers = ({ mailer, services, logger }: JobDeps): JobHan
     logger.info({ ...payload, ...result }, 'emissions calculated');
   },
   'report.generate': (payload) => services.reports.generate(payload),
+  'assistant.index': async (payload) => {
+    const n = await services.assistant.index(payload.tenantId);
+    logger.info({ ...payload, chunks: n }, 'assistant index rebuilt');
+  },
 });
 
 export async function dispatchJob(handlers: JobHandlers, name: string, payload: unknown): Promise<void> {
