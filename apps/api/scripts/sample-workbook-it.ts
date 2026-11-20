@@ -25,10 +25,42 @@ type Row = [string, string, string, number, string, string, string, number | '',
 
 const OFFICES = [
   { code: 'HQ', name: 'Headquarters', type: 'Headquarters', city: 'Bengaluru', country: 'IN', parent: '—', kwh: 52000 },
-  { code: 'BLR', name: 'Bengaluru Tech Park', type: 'Office', city: 'Bengaluru', country: 'IN', parent: 'HQ', kwh: 38500 },
-  { code: 'CHN', name: 'Chennai Delivery Centre', type: 'Office', city: 'Chennai', country: 'IN', parent: 'HQ', kwh: 29800 },
-  { code: 'PUN', name: 'Pune Development Centre', type: 'Office', city: 'Pune', country: 'IN', parent: 'HQ', kwh: 21400 },
-  { code: 'HYD', name: 'Hyderabad Data Centre', type: 'Plant / factory', city: 'Hyderabad', country: 'IN', parent: 'HQ', kwh: 96000 },
+  {
+    code: 'BLR',
+    name: 'Bengaluru Tech Park',
+    type: 'Office',
+    city: 'Bengaluru',
+    country: 'IN',
+    parent: 'HQ',
+    kwh: 38500,
+  },
+  {
+    code: 'CHN',
+    name: 'Chennai Delivery Centre',
+    type: 'Office',
+    city: 'Chennai',
+    country: 'IN',
+    parent: 'HQ',
+    kwh: 29800,
+  },
+  {
+    code: 'PUN',
+    name: 'Pune Development Centre',
+    type: 'Office',
+    city: 'Pune',
+    country: 'IN',
+    parent: 'HQ',
+    kwh: 21400,
+  },
+  {
+    code: 'HYD',
+    name: 'Hyderabad Data Centre',
+    type: 'Plant / factory',
+    city: 'Hyderabad',
+    country: 'IN',
+    parent: 'HQ',
+    kwh: 96000,
+  },
 ];
 
 // FY 2025-26 (Apr–Mar), monthly.
@@ -46,7 +78,8 @@ const Q = [
   { start: '2025-10-01', end: '2025-12-31', label: 'Q3' },
   { start: '2026-01-01', end: '2026-03-31', label: 'Q4' },
 ];
-const wobble = (seed: number) => 1 + (Math.sin(seed * 12.9898) * 43758.5453 - Math.floor(Math.sin(seed * 12.9898) * 43758.5453) - 0.5) * 0.12;
+const wobble = (seed: number) =>
+  1 + (Math.sin(seed * 12.9898) * 43758.5453 - Math.floor(Math.sin(seed * 12.9898) * 43758.5453) - 0.5) * 0.12;
 
 const electricity: Row[] = OFFICES.flatMap((o, oi) =>
   MONTHS.map((m, mi) => {
@@ -70,7 +103,17 @@ const stationary: Row[] = [
     Q.map((q, qi) => {
       const o = OFFICES.find((x) => x.code === code)!;
       const litres = Math.round([420, 310, 1650][i]! * wobble(i * 7 + qi));
-      return [`Diesel – DG set backup power`, code, `${o.city}, IN`, litres, 'L', q.start, q.end, litres * 92, 'INR'] as Row;
+      return [
+        `Diesel – DG set backup power`,
+        code,
+        `${o.city}, IN`,
+        litres,
+        'L',
+        q.start,
+        q.end,
+        litres * 92,
+        'INR',
+      ] as Row;
     }),
   ),
   ['LPG – office cafeteria', 'BLR', 'Bengaluru, IN', 1180, 'kg', FY.start, FY.end, 112100, 'INR'],
@@ -84,9 +127,39 @@ const fugitive: Row[] = [
 ];
 
 const travel: Row[] = [
-  ['Flight – economy BLR→DXB return', 'HQ', 'Bengaluru–Dubai', 21400, 'passenger.km', Q[0]!.start, Q[0]!.end, 182000, 'INR'],
-  ['Flight – long-haul economy BLR→SFO return', 'HQ', 'Bengaluru–San Francisco', 54200, 'passenger.km', Q[1]!.start, Q[1]!.end, 640000, 'INR'],
-  ['Flight – long-haul business class BLR→LHR return', 'HQ', 'Bengaluru–London', 32800, 'passenger.km', Q[2]!.start, Q[2]!.end, 910000, 'INR'],
+  [
+    'Flight – economy BLR→DXB return',
+    'HQ',
+    'Bengaluru–Dubai',
+    21400,
+    'passenger.km',
+    Q[0]!.start,
+    Q[0]!.end,
+    182000,
+    'INR',
+  ],
+  [
+    'Flight – long-haul economy BLR→SFO return',
+    'HQ',
+    'Bengaluru–San Francisco',
+    54200,
+    'passenger.km',
+    Q[1]!.start,
+    Q[1]!.end,
+    640000,
+    'INR',
+  ],
+  [
+    'Flight – long-haul business class BLR→LHR return',
+    'HQ',
+    'Bengaluru–London',
+    32800,
+    'passenger.km',
+    Q[2]!.start,
+    Q[2]!.end,
+    910000,
+    'INR',
+  ],
   ['Flight – domestic economy', 'CHN', 'Chennai–Delhi', 18600, 'passenger.km', Q[1]!.start, Q[1]!.end, 98000, 'INR'],
   ['Flight – domestic economy', 'PUN', 'Pune–Bengaluru', 9400, 'passenger.km', Q[3]!.start, Q[3]!.end, 61000, 'INR'],
   ['Hotel stay – Dubai', 'HQ', 'Dubai, AE', 24, 'room.night', Q[0]!.start, Q[0]!.end, 264000, 'INR'],
@@ -100,10 +173,50 @@ const travel: Row[] = [
 const commuting: Row[] = OFFICES.filter((o) => o.code !== 'HYD').flatMap((o, i) => {
   const staff = [220, 640, 410, 280][i]!;
   return [
-    [`Car – average petrol, employee commuting`, o.code, `${o.city}, IN`, Math.round(staff * 0.35 * 18 * 2 * 220), 'km', FY.start, FY.end, '', ''],
-    [`Motorbike – average, employee commuting`, o.code, `${o.city}, IN`, Math.round(staff * 0.3 * 12 * 2 * 220), 'km', FY.start, FY.end, '', ''],
-    [`Bus – local, employee commuting`, o.code, `${o.city}, IN`, Math.round(staff * 0.25 * 15 * 2 * 220), 'passenger.km', FY.start, FY.end, '', ''],
-    [`Metro / light rail – employee commuting`, o.code, `${o.city}, IN`, Math.round(staff * 0.1 * 14 * 2 * 220), 'passenger.km', FY.start, FY.end, '', ''],
+    [
+      `Car – average petrol, employee commuting`,
+      o.code,
+      `${o.city}, IN`,
+      Math.round(staff * 0.35 * 18 * 2 * 220),
+      'km',
+      FY.start,
+      FY.end,
+      '',
+      '',
+    ],
+    [
+      `Motorbike – average, employee commuting`,
+      o.code,
+      `${o.city}, IN`,
+      Math.round(staff * 0.3 * 12 * 2 * 220),
+      'km',
+      FY.start,
+      FY.end,
+      '',
+      '',
+    ],
+    [
+      `Bus – local, employee commuting`,
+      o.code,
+      `${o.city}, IN`,
+      Math.round(staff * 0.25 * 15 * 2 * 220),
+      'passenger.km',
+      FY.start,
+      FY.end,
+      '',
+      '',
+    ],
+    [
+      `Metro / light rail – employee commuting`,
+      o.code,
+      `${o.city}, IN`,
+      Math.round(staff * 0.1 * 14 * 2 * 220),
+      'passenger.km',
+      FY.start,
+      FY.end,
+      '',
+      '',
+    ],
   ] as Row[];
 });
 
@@ -123,13 +236,55 @@ const waste: Row[] = [
 ];
 
 const SHEETS: Array<{ name: string; scope: string; category: string; adName: string; rows: Row[] }> = [
-  { name: 'S2 Electricity', scope: 'Scope 2', category: 'Purchased electricity', adName: 'Office & DC electricity FY26', rows: electricity },
-  { name: 'S1 DG sets & LPG', scope: 'Scope 1', category: 'Stationary combustion', adName: 'DG sets & cafeteria LPG FY26', rows: stationary },
-  { name: 'S1 Refrigerants', scope: 'Scope 1', category: 'Fugitive emissions', adName: 'HVAC refrigerants FY26', rows: fugitive },
-  { name: 'S3 Business travel', scope: 'Scope 3', category: '6. Business travel', adName: 'Business travel FY26', rows: travel },
-  { name: 'S3 Commuting', scope: 'Scope 3', category: '7. Employee commuting', adName: 'Employee commuting FY26', rows: commuting },
-  { name: 'S3 Purchased goods', scope: 'Scope 3', category: '1. Purchased goods & services', adName: 'IT hardware & supplies FY26', rows: purchased },
-  { name: 'S3 Waste', scope: 'Scope 3', category: '5. Waste generated in operations', adName: 'Office waste FY26', rows: waste },
+  {
+    name: 'S2 Electricity',
+    scope: 'Scope 2',
+    category: 'Purchased electricity',
+    adName: 'Office & DC electricity FY26',
+    rows: electricity,
+  },
+  {
+    name: 'S1 DG sets & LPG',
+    scope: 'Scope 1',
+    category: 'Stationary combustion',
+    adName: 'DG sets & cafeteria LPG FY26',
+    rows: stationary,
+  },
+  {
+    name: 'S1 Refrigerants',
+    scope: 'Scope 1',
+    category: 'Fugitive emissions',
+    adName: 'HVAC refrigerants FY26',
+    rows: fugitive,
+  },
+  {
+    name: 'S3 Business travel',
+    scope: 'Scope 3',
+    category: '6. Business travel',
+    adName: 'Business travel FY26',
+    rows: travel,
+  },
+  {
+    name: 'S3 Commuting',
+    scope: 'Scope 3',
+    category: '7. Employee commuting',
+    adName: 'Employee commuting FY26',
+    rows: commuting,
+  },
+  {
+    name: 'S3 Purchased goods',
+    scope: 'Scope 3',
+    category: '1. Purchased goods & services',
+    adName: 'IT hardware & supplies FY26',
+    rows: purchased,
+  },
+  {
+    name: 'S3 Waste',
+    scope: 'Scope 3',
+    category: '5. Waste generated in operations',
+    adName: 'Office waste FY26',
+    rows: waste,
+  },
 ];
 
 const wb = new ExcelJS.Workbook();
@@ -148,23 +303,34 @@ const header = (ws: ExcelJS.Worksheet) => {
 // Read-me sheet first.
 const readme = wb.addWorksheet('Read me', { properties: { tabColor: { argb: TEAL } } });
 readme.columns = [{ width: 30 }, { width: 34 }, { width: 22 }, { width: 18 }, { width: 14 }, { width: 10 }];
-readme.addRow(['Carbon Glint – test data for an IT / software services company']).font = { bold: true, size: 16, color: { argb: TEAL } };
+readme.addRow(['Carbon Glint – test data for an IT / software services company']).font = {
+  bold: true,
+  size: 16,
+  color: { argb: TEAL },
+};
 readme.addRow(['Reporting period: FY 2025-26 (1 Apr 2025 – 31 Mar 2026). One sheet per Activity Definition.']);
 readme.addRow([]);
-readme.addRow(['Step 1 – create these business units (Org Units) first. Rows use the Code column.']).font = { bold: true };
+readme.addRow(['Step 1 – create these business units (Org Units) first. Rows use the Code column.']).font = {
+  bold: true,
+};
 const ouHeader = readme.addRow(['Code', 'Name', 'Type', 'City', 'Country', 'Parent']);
 ouHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
 ouHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TEAL } };
 for (const o of OFFICES) readme.addRow([o.code, o.name, o.type, o.city, o.country, o.parent]);
-readme.addRow(['Tip: your headquarters already exists with code HQ. Create the other four under it.']).font = { italic: true };
+readme.addRow(['Tip: your headquarters already exists with code HQ. Create the other four under it.']).font = {
+  italic: true,
+};
 readme.addRow([]);
-readme.addRow(['Step 2 – create one Activity Definition per sheet, upload this file and pick the sheet:']).font = { bold: true };
+readme.addRow(['Step 2 – create one Activity Definition per sheet, upload this file and pick the sheet:']).font = {
+  bold: true,
+};
 const adHeader = readme.addRow(['Sheet', 'Activity Definition name', 'Scope', 'GHG category', 'Rows']);
 adHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
 adHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TEAL } };
 for (const s of SHEETS) readme.addRow([s.name, s.adName, s.scope, s.category, s.rows.length]);
 readme.addRow([]);
-readme.addRow(['Step 3 – map columns (AI or manual), import, then Publish. Emissions appear on the Dashboard.']).font = { bold: true };
+readme.addRow(['Step 3 – map columns (AI or manual), import, then Publish. Emissions appear on the Dashboard.']).font =
+  { bold: true };
 readme.addRow(['Step 4 – try deleting a few rows on a definition and press Recalculate.']).font = { bold: true };
 
 for (const s of SHEETS) {
