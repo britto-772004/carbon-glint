@@ -12,3 +12,4 @@ export * from './ghg-category.model.js';
 export * from './activity.model.js';
 export * from './emission-factor.model.js';
 export * from './report.model.js';
+export * from './assistant.model.js';

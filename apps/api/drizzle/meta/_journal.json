@@ -64,6 +64,13 @@
       "when": 1795176502671,
       "tag": "0008_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795176885030,
+      "tag": "0009_assistant",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,8 @@ tags:
     description: Emission factor library, calculated emissions, traceability, overrides and aggregations
   - name: reports
     description: Country-format ESG reports (PDF)
+  - name: assistant
+    description: AI assistant (RAG + tenant-scoped data tools + chart answers)
 # Default: public. Protected operations declare `security` explicitly.
 # cookieAuth "scopes" are roles: [] = any signed-in user, [admin] = tenant admin, [superadmin] = platform operator.
 security: []
@@ -1441,6 +1443,91 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /assistant/chat:
+    post:
+      operationId: sendChatMessage
+      tags: [assistant]
+      summary: Ask the assistant a question about your company's emissions
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: The assistant's answer (with optional chart and sources)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /assistant/conversations:
+    get:
+      operationId: listConversations
+      tags: [assistant]
+      summary: Your conversations (newest first)
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+        default:
+          $ref: '#/components/responses/Error'
+  /assistant/conversations/{conversationId}/messages:
+    get:
+      operationId: listConversationMessages
+      tags: [assistant]
+      summary: Messages of a conversation
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Messages (oldest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /assistant/reindex:
+    post:
+      operationId: reindexAssistant
+      tags: [assistant]
+      summary: Rebuild the assistant's knowledge index for your company
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     cookieAuth:
@@ -1571,6 +1658,103 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    ChartSpec:
+      type: object
+      additionalProperties: false
+      required: [type, title, unit, categories, series]
+      properties:
+        type:
+          type: string
+          enum: [bar, stacked-bar, line, pie, table]
+        title:
+          type: string
+        unit:
+          type: string
+        categories:
+          type: array
+          maxItems: 60
+          items:
+            type: string
+        series:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, data]
+            properties:
+              name:
+                type: string
+              data:
+                type: array
+                maxItems: 60
+                items:
+                  type: number
+    ChatMessage:
+      type: object
+      additionalProperties: false
+      required: [id, role, content, chart, sources, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+          description: Markdown
+        chart:
+          oneOf:
+            - $ref: '#/components/schemas/ChartSpec'
+            - type: 'null'
+        sources:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    Conversation:
+      type: object
+      additionalProperties: false
+      required: [id, title, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    ChatRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        conversationId:
+          type: string
+          format: uuid
+    ChatResponse:
+      type: object
+      additionalProperties: false
+      required: [conversationId, message, suggestions]
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+        suggestions:
+          type: array
+          maxItems: 4
+          items:
+            type: string
     ReportFormat:
       type: object
       additionalProperties: false
