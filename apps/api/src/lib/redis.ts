@@ -2,7 +2,9 @@ import { Redis } from 'ioredis';
 
 /** Shared Redis connection (sessions, rate limits, cache). BullMQ opens its own connections from the URL. */
 export function createRedis(url: string): Redis {
-  return new Redis(url, { lazyConnect: false, maxRetriesPerRequest: 2, enableOfflineQueue: false });
+  // Offline queue on: commands issued while (re)connecting wait instead of failing instantly;
+  // maxRetriesPerRequest bounds how long they wait if Redis is really down.
+  return new Redis(url, { maxRetriesPerRequest: 2, connectTimeout: 5_000 });
 }
 
 /** BullMQ connection options parsed from a redis:// URL. */

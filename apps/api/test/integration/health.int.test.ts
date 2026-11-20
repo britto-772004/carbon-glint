@@ -1,17 +1,17 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { createRepositories } from '../../src/repositories/index.js';
 import { createTestApp } from '../helpers/app.js';
-import { createTestDatabase } from './db.js';
+import { createTestStores } from './db.js';
 
-/** End-to-end: HTTP → controller → service → repository → real Postgres. */
-describe('GET /api/health (real Postgres)', () => {
-  const database = createTestDatabase();
-  const { api } = createTestApp({ repositories: createRepositories(database.db) });
+/** End-to-end: HTTP → controller → service → repository → real Postgres + Redis. */
+describe('GET /api/health (real stores)', () => {
+  const stores = createTestStores();
+  const { api } = createTestApp({ repositories: createRepositories(stores) });
 
-  afterAll(() => database.close());
+  afterAll(() => stores.close());
 
-  it('reports the database as up', async () => {
+  it('reports every dependency as up', async () => {
     const res = await api.get('/api/health').expect(200);
-    expect(res.body).toMatchObject({ status: 'ok', checks: { database: 'up' } });
+    expect(res.body).toMatchObject({ status: 'ok', checks: { database: 'up', redis: 'up' } });
   });
 });

@@ -58,6 +58,9 @@ export function HealthStatus({ health, isLoading, error, onRetry }: HealthStatus
               color={health.checks.database === 'up' ? 'success' : 'error'}
             />
           </Row>
+          <Row label="Redis">
+            <Chip size="small" label={health.checks.redis} color={health.checks.redis === 'up' ? 'success' : 'error'} />
+          </Row>
           <Row label="Version">
             <Typography variant="body2">{health.version}</Typography>
           </Row>

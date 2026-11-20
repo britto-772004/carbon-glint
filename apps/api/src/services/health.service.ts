@@ -12,7 +12,7 @@ export interface HealthService {
 export const createHealthService = ({ repositories, config }: ServiceDeps): HealthService => ({
   async getHealth() {
     const [dbUp, redisUp] = await Promise.all([repositories.system.pingDatabase(), repositories.system.pingRedis()]);
-    const status = (up: boolean) => (up ? 'up' : 'down') as const;
+    const status = (up: boolean): Schemas['DependencyStatus'] => (up ? 'up' : 'down');
     return {
       status: dbUp && redisUp ? 'ok' : 'degraded',
       version: config.APP_VERSION,

@@ -67,7 +67,10 @@ export default tseslint.config(
     layer('controllers'),
     layer('models', true),
     layer('db'),
-    { regex: '^(express|drizzle-orm|pg|@google/genai)(/|$)', message: 'Use repositories / deps.ai instead.' },
+    {
+      regex: '^(express|drizzle-orm|pg|@google/genai|ioredis|bullmq|nodemailer)(/|$)',
+      message: 'Use repositories, deps.ai, deps.jobs instead.',
+    },
   ]),
   apiLayer('repositories', 'Repositories only read/write models; no DTOs, HTTP or business rules.', [
     layer('controllers'),

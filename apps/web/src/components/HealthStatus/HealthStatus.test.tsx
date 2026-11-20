@@ -22,7 +22,7 @@ describe('HealthStatus', () => {
   it('renders the healthy branch', () => {
     renderWithProviders(<HealthStatus isLoading={false} health={buildHealth()} onRetry={() => {}} />);
     expect(screen.getByText('ok')).toBeInTheDocument();
-    expect(screen.getByText('up')).toBeInTheDocument();
+    expect(screen.getAllByText('up')).toHaveLength(2);
     expect(screen.getByText('0.1.0')).toBeInTheDocument();
   });
 
@@ -30,7 +30,7 @@ describe('HealthStatus', () => {
     renderWithProviders(
       <HealthStatus
         isLoading={false}
-        health={buildHealth({ status: 'degraded', checks: { database: 'down' } })}
+        health={buildHealth({ status: 'degraded', checks: { database: 'down', redis: 'up' } })}
         onRetry={() => {}}
       />,
     );

@@ -1,16 +1,23 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createSystemRepository } from '../../../src/repositories/system.repository.js';
-import { createTestDatabase, resetDatabase } from '../db.js';
+import { createTestStores, resetDatabase, resetRedis } from '../db.js';
 
-/** Repository tests: real SQL against real Postgres. One file per repository. */
-describe('SystemRepository (Postgres)', () => {
-  const database = createTestDatabase();
-  const repo = createSystemRepository(database.db);
+/** Repository tests: real SQL / Redis. One file per repository. */
+describe('SystemRepository (Postgres + Redis)', () => {
+  const stores = createTestStores();
+  const repo = createSystemRepository(stores);
 
-  beforeEach(() => resetDatabase(database));
-  afterAll(() => database.close());
+  beforeEach(async () => {
+    await resetDatabase(stores.database);
+    await resetRedis(stores.redis);
+  });
+  afterAll(() => stores.close());
 
-  it('pings the database', async () => {
-    await expect(repo.ping()).resolves.toBe(true);
+  it('pings Postgres', async () => {
+    await expect(repo.pingDatabase()).resolves.toBe(true);
+  });
+
+  it('pings Redis', async () => {
+    await expect(repo.pingRedis()).resolves.toBe(true);
   });
 });

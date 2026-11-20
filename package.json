@@ -15,11 +15,11 @@
     "test": "pnpm -r run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d --wait postgres redis mailpit",
     "db:generate": "pnpm --filter @carbon-glint/api run db:generate",
     "db:migrate": "pnpm --filter @carbon-glint/api run db:migrate",
-    "deploy:web": "firebase deploy --only hosting --non-interactive",
-    "test:integration": "pnpm --filter @carbon-glint/api run test:integration"
+    "test:integration": "pnpm --filter @carbon-glint/api run test:integration",
+    "dev:deps": "docker compose up -d --wait"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
