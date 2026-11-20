@@ -18,7 +18,8 @@
     "db:migrate": "tsx --env-file-if-exists=.env src/migrate.ts",
     "test:integration": "vitest run --project integration",
     "test:watch": "vitest --project unit",
-    "seed:superadmin": "tsx --env-file-if-exists=.env src/seed-superadmin.ts"
+    "seed:superadmin": "tsx --env-file-if-exists=.env src/seed-superadmin.ts",
+    "ef:import": "tsx --env-file-if-exists=.env src/import-factors.ts"
   },
   "dependencies": {
     "@carbon-glint/api-spec": "workspace:*",

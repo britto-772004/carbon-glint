@@ -10,3 +10,4 @@ export * from './invitation.model.js';
 export * from './org-unit.model.js';
 export * from './ghg-category.model.js';
 export * from './activity.model.js';
+export * from './emission-factor.model.js';

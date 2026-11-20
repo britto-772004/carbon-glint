@@ -43,6 +43,13 @@
       "when": 1795173888954,
       "tag": "0005_org_unit_parent_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795174471625,
+      "tag": "0006_emission_factors",
+      "breakpoints": true
     }
   ]
 }
