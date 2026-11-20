@@ -236,7 +236,7 @@ export const createAssistantService = (
       await repos.assistant.addMessage({ conversationId: conversation.id, role: 'user', content: input.message });
 
       let answer: { answer: string; chart?: unknown; sources?: string[]; suggestions?: string[] };
-      let toolCalls: Array<{ name: string; args: unknown }> = [];
+      let toolCalls: Array<{ name: string; args: unknown }>;
       try {
         const agent = await ai.runAgent({
           system: SYSTEM,
