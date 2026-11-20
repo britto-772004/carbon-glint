@@ -1,5 +1,4 @@
 import { Navigate, type RouteObject } from 'react-router';
-import { ComingSoon } from './components/common/ComingSoon';
 import { LandingContainer } from './containers/LandingContainer';
 import { AcceptInviteContainer } from './containers/auth/AcceptInviteContainer';
 import { ForgotPasswordContainer } from './containers/auth/ForgotPasswordContainer';
@@ -11,6 +10,7 @@ import { ActivityDefinitionsContainer } from './containers/activity-definitions/
 import { DashboardContainer } from './containers/dashboard/DashboardContainer';
 import { EmissionFactorsContainer } from './containers/emissions/EmissionFactorsContainer';
 import { ReportsContainer } from './containers/reports/ReportsContainer';
+import { AssistantContainer } from './containers/assistant/AssistantContainer';
 import { OrgUnitsContainer } from './containers/org-units/OrgUnitsContainer';
 import { OnboardingContainer } from './containers/onboarding/OnboardingContainer';
 import { PlatformTenantDetailContainer } from './containers/platform/PlatformTenantDetailContainer';
@@ -18,8 +18,6 @@ import { PlatformTenantsContainer } from './containers/platform/PlatformTenantsC
 import { RequireSession } from './containers/session/RequireSession';
 import { SettingsContainer } from './containers/settings/SettingsContainer';
 import { ShellContainer } from './containers/shell/ShellContainer';
-
-const soon = (title: string, description: string) => <ComingSoon title={title} description={description} />;
 
 /** All routes (used by the browser router and by tests via createMemoryRouter). */
 export const routes: RouteObject[] = [
@@ -52,7 +50,7 @@ export const routes: RouteObject[] = [
           { path: 'activity-definitions/:activityDefinitionId', element: <ActivityDefinitionDetailContainer /> },
           { path: 'emission-factors', element: <EmissionFactorsContainer /> },
           { path: 'reports', element: <ReportsContainer /> },
-          { path: 'assistant', element: soon('Assistant', 'Ask questions about your emissions.') },
+          { path: 'assistant', element: <AssistantContainer /> },
           { path: 'settings', element: <SettingsContainer /> },
         ],
       },

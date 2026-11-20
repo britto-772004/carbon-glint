@@ -38,6 +38,8 @@ export interface AppShellProps {
   onLogout: () => void;
   showTemporaryPasswordBanner: boolean;
   changePassword: ChangePasswordDialogProps;
+  /** Optional floating widget (e.g. the AI assistant launcher). */
+  floating?: ReactNode;
   children: ReactNode;
 }
 
@@ -54,6 +56,7 @@ export function AppShell({
   onLogout,
   showTemporaryPasswordBanner,
   changePassword,
+  floating,
   children,
 }: AppShellProps) {
   const initials = userName
@@ -107,6 +110,7 @@ export function AppShell({
         <Stack spacing={3}>{children}</Stack>
       </Container>
       <ChangePasswordDialog {...changePassword} />
+      {floating}
     </Box>
   );
 }

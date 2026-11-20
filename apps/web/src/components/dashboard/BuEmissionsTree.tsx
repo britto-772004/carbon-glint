@@ -21,6 +21,7 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
   return (
     <Paper
       variant="outlined"
+      className="nopan nodrag"
       onClick={() => data.onSelect(node.orgUnitId)}
       sx={{
         width: NODE_WIDTH,

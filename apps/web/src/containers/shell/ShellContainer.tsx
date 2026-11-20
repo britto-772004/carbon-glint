@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { changePasswordMutation, getMeQueryKey, logOutMutation, type Me } from '@carbon-glint/sdk';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { AppShell } from '../../components/shell/AppShell';
+import { AssistantLauncherContainer } from '../assistant/AssistantLauncherContainer';
 import { PLATFORM_TABS, TENANT_TABS } from './tabs';
 import { toErrorMessage } from '../../lib/errors';
 import { useMe } from '../session/useMe';
@@ -51,6 +52,9 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
         setDialogOpen(true);
       }}
       showTemporaryPasswordBanner={Boolean(me?.user.passwordIsTemporary)}
+      floating={
+        variant === 'tenant' && !pathname.startsWith('/app/assistant') ? <AssistantLauncherContainer /> : undefined
+      }
       changePassword={{
         open: dialogOpen,
         onClose: () => setDialogOpen(false),
