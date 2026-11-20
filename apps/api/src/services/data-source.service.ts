@@ -180,8 +180,13 @@ export const createDataSourceService = ({ repositories: repos, jobs, files, ai }
           MAPPING_FIELDS.map((f) => [f, mapping[f] ? Math.min(1, Math.max(0, Number(out.confidence?.[f] ?? 0.5))) : 0]),
         );
         return { mapping, confidence, source: 'ai', reasoning: String(out.reasoning ?? '').slice(0, 1000) };
-      } catch {
-        return { ...heuristic, source: 'heuristic', reasoning: 'AI was unavailable; matched by column names instead.' };
+      } catch (err) {
+        const why = err instanceof Error ? err.message.replace(/\s+/g, ' ').slice(0, 120) : 'unknown error';
+        return {
+          ...heuristic,
+          source: 'heuristic',
+          reasoning: `The AI service didn't respond (${why}), so the columns were matched by name. Please review them below.`,
+        };
       }
     },
 

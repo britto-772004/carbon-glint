@@ -218,8 +218,7 @@ export function TraceDrawer({
               </b>{' '}
               — {t.factor.name}
               <br />
-              {t.factor.sourceName} ({t.factor.publisher}) · {t.factor.region} · {t.factor.year} · ID{' '}
-              {t.factor.externalId}
+              {t.factor.sourceName} · {t.factor.region} · {t.factor.year} · ID {t.factor.externalId}
               {(t.factor.gases.co2 ?? t.factor.gases.ch4 ?? t.factor.gases.n2o) !== null && (
                 <>
                   <br />

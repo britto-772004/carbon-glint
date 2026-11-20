@@ -1,6 +1,7 @@
+import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
+import CloudUploadOutlined from '@mui/icons-material/CloudUploadOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import TuneRounded from '@mui/icons-material/TuneRounded';
-import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
 import type { ChangeEvent } from 'react';
 import type { ColumnMapping, DataSource, MappingSuggestion } from '@carbon-glint/sdk';
 import Alert from '@mui/material/Alert';
@@ -15,6 +16,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import StepConnector from '@mui/material/StepConnector';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -88,19 +90,40 @@ function UploadStep({ onFile, isUploading, uploadError }: UploadWizardProps) {
           sx={{
             border: 2,
             borderStyle: 'dashed',
-            borderColor: 'divider',
-            borderRadius: 2,
+            borderColor: 'primary.main',
+            bgcolor: (t) => t.alpha(t.palette.primary.main, 0.05),
+            borderRadius: 3,
             p: 4,
             textAlign: 'center',
             height: '100%',
+            minHeight: 280,
             display: 'grid',
             placeItems: 'center',
           }}
         >
           <Stack spacing={2} sx={{ alignItems: 'center' }}>
-            <UploadFileOutlined sx={{ fontSize: 48, color: 'primary.main' }} aria-hidden />
-            <Typography>Upload a CSV or Excel (.xlsx) file, up to 20 MB.</Typography>
-            <Button component="label" variant="contained" loading={isUploading}>
+            <Box
+              aria-hidden
+              sx={{
+                width: 72,
+                height: 72,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor: (t) => t.alpha(t.palette.primary.main, 0.14),
+              }}
+            >
+              <CloudUploadOutlined sx={{ fontSize: 36, color: 'primary.main' }} />
+            </Box>
+            <div>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Drop in your activity sheet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Upload a CSV or Excel (.xlsx) file, up to 20 MB.
+              </Typography>
+            </div>
+            <Button component="label" variant="contained" size="large" loading={isUploading}>
               Choose file
               <input hidden type="file" accept=".csv,.xlsx" aria-label="Source sheet file" onChange={pick} />
             </Button>
@@ -217,12 +240,33 @@ function MappingStep(p: UploadWizardProps) {
             },
           ].map((o) => (
             <Grid key={o.mode} size={{ xs: 12, sm: 6 }}>
-              <Card>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%',
+                  borderRadius: 3,
+                  transition: 'border-color .15s, box-shadow .15s',
+                  '&:hover': { borderColor: 'primary.main', boxShadow: 3 },
+                }}
+              >
                 <CardActionArea onClick={() => p.onChooseMode(o.mode)} sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Box aria-hidden sx={{ mb: 1 }}>
-                      {o.icon}
-                    </Box>
+                  <CardContent sx={{ p: 3 }}>
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                      <Box
+                        aria-hidden
+                        sx={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 2,
+                          display: 'grid',
+                          placeItems: 'center',
+                          bgcolor: (t) => t.alpha(t.palette.primary.main, 0.12),
+                        }}
+                      >
+                        {o.icon}
+                      </Box>
+                      {o.mode === 'ai' && <Chip size="small" color="primary" label="Recommended" />}
+                    </Stack>
                     <Typography variant="h6">{o.title}</Typography>
                     <Typography color="text.secondary">{o.text}</Typography>
                   </CardContent>
@@ -307,7 +351,7 @@ function ImportStep(p: UploadWizardProps) {
         </Stack>
       )}
       {ds.status === 'imported' && (
-        <Alert severity={ds.errorCount ? 'warning' : 'success'}>
+        <Alert severity={ds.errorCount ? 'warning' : 'success'} icon={<CheckCircleRounded />}>
           Imported {ds.importedCount.toLocaleString()} activities
           {ds.errorCount ? `; skipped ${ds.errorCount} invalid rows` : ''}.
         </Alert>
@@ -353,9 +397,39 @@ export function UploadWizard(p: UploadWizardProps) {
   const finished = ds?.status === 'imported';
   return (
     <Dialog open={p.open} onClose={p.onClose} fullWidth maxWidth="lg">
-      <DialogTitle>Add data source</DialogTitle>
+      <DialogTitle sx={{ pb: 0.5 }}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          <Box
+            aria-hidden
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              display: 'grid',
+              placeItems: 'center',
+              color: 'primary.contrastText',
+              bgcolor: 'primary.main',
+            }}
+          >
+            <CloudUploadOutlined />
+          </Box>
+          <div>
+            <Typography variant="h6" component="span" sx={{ display: 'block', lineHeight: 1.2 }}>
+              Add data source
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Step {p.step + 1} of {WIZARD_STEPS.length} · {WIZARD_STEPS[p.step]}
+            </Typography>
+          </div>
+        </Stack>
+      </DialogTitle>
       <DialogContent>
-        <Stepper activeStep={p.step} sx={{ mb: 3, mt: 1 }} alternativeLabel>
+        <Stepper
+          activeStep={p.step}
+          sx={{ mb: 3, mt: 2, p: 2, borderRadius: 3, bgcolor: 'action.hover' }}
+          alternativeLabel
+          connector={<StepConnector />}
+        >
           {WIZARD_STEPS.map((s) => (
             <Step key={s}>
               <StepLabel>{s}</StepLabel>
@@ -367,7 +441,7 @@ export function UploadWizard(p: UploadWizardProps) {
         {p.step === 2 && <MappingStep {...p} />}
         {p.step === 3 && <ImportStep {...p} />}
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={p.onClose}>{finished ? 'Done' : 'Cancel'}</Button>
         {p.step > 0 && p.step < 3 && <Button onClick={p.onBack}>Back</Button>}
         {(p.step === 1 || p.step === 2) && (

@@ -53,6 +53,10 @@ export function ActivityDefinitionDetailContainer() {
   const orgUnits = useQuery(listOrgUnitsOptions());
   const refresh = () =>
     Promise.all([
+      // the list page (any scope filter) and the board counts show status/counts too
+      queryClient.invalidateQueries({
+        predicate: (q) => (q.queryKey[0] as { _id?: string } | undefined)?._id === 'listActivityDefinitions',
+      }),
       queryClient.invalidateQueries({ queryKey: getActivityDefinitionQueryKey({ path }) }),
       queryClient.invalidateQueries({ queryKey: listActivitiesQueryKey({ path }) }),
     ]);

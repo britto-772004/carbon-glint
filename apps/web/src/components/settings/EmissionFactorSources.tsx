@@ -135,7 +135,6 @@ export function EmissionFactorSources(p: EmissionFactorSourcesProps) {
                 <TableHead>
                   <TableRow>
                     <TableCell>Database</TableCell>
-                    <TableCell>Publisher</TableCell>
                     <TableCell>Edition</TableCell>
                     <TableCell align="right">Factors</TableCell>
                     <TableCell>Licence</TableCell>
@@ -151,7 +150,6 @@ export function EmissionFactorSources(p: EmissionFactorSourcesProps) {
                           {s.name}
                         </Typography>
                       </TableCell>
-                      <TableCell>{s.publisher}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         {s.version} · {s.year}
                       </TableCell>
@@ -159,7 +157,7 @@ export function EmissionFactorSources(p: EmissionFactorSourcesProps) {
                       <TableCell>{s.licence}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{when(s.importedAt)}</TableCell>
                       <TableCell align="right">
-                        <Tooltip title={`Open ${s.publisher} publication`}>
+                        <Tooltip title="Open the published source">
                           <IconButton
                             size="small"
                             component="a"

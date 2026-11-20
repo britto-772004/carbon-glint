@@ -104,3 +104,19 @@ describe('OpenAI client', () => {
     await expect(client().generateText('x')).rejects.toThrow('OpenAI 401');
   });
 });
+
+describe('withRetry', () => {
+  it('retries transient failures, then succeeds', async () => {
+    const { withRetry } = await import('../../../src/lib/ai/index.js');
+    const fn = vi.fn().mockRejectedValueOnce(new Error('503 model is overloaded')).mockResolvedValue('ok');
+    expect(await withRetry(fn, 3, 1)).toBe('ok');
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry permanent errors', async () => {
+    const { withRetry } = await import('../../../src/lib/ai/index.js');
+    const fn = vi.fn().mockRejectedValue(new Error('400 invalid schema'));
+    await expect(withRetry(fn, 3, 1)).rejects.toThrow('invalid schema');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+});

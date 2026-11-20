@@ -55,6 +55,7 @@ export function ActivityDefinitionsContainer() {
 
   return (
     <ActivityDefinitionsPage
+      summary={allDefinitions.data}
       definitions={definitions.data ? paginate(listed, pagination) : undefined}
       pagination={pagination}
       isLoading={definitions.isPending}
