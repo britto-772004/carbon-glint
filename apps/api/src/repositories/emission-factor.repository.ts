@@ -23,7 +23,7 @@ export interface EmissionFactorRepository {
   listSources(): Promise<EfSourceModel[]>;
   findById(id: string): Promise<{ factor: EmissionFactorModel; source: EfSourceModel } | null>;
   findManyByIds(ids: string[]): Promise<Array<{ factor: EmissionFactorModel; source: EfSourceModel }>>;
-  /** Full-text + trigram ranking (ts_rank_cd × 0.6 + similarity × 0.4). */
+  /** Full-text + trigram ranking (ts_rank_cd × 0.6 + max(similarity, word_similarity) × 0.4). */
   search(params: FactorSearch): Promise<FactorHit[]>;
 }
 
@@ -82,14 +82,15 @@ export const createEmissionFactorRepository = (db: DbExecutor): EmissionFactorRe
         .filter((w) => w.length > 1)
         .join(' | ') || 'x'
     })`;
-    const score = sql<number>`(0.6 * ts_rank_cd(${emissionFactors.search}, ${orTsq}) + 0.4 * similarity(${emissionFactors.name}, ${q}))`;
+    const trigram = sql`greatest(similarity(${emissionFactors.name}, ${q}), word_similarity(${q}, ${emissionFactors.name}))`;
+    const score = sql<number>`(0.6 * ts_rank_cd(${emissionFactors.search}, ${orTsq}) + 0.4 * ${trigram})`;
     const rows = await db
       .select({ factor: emissionFactors, source: efSources, score })
       .from(emissionFactors)
       .innerJoin(efSources, eq(efSources.id, emissionFactors.sourceId))
       .where(
         and(
-          sql`(${emissionFactors.search} @@ ${orTsq} or ${emissionFactors.search} @@ ${tsq} or similarity(${emissionFactors.name}, ${q}) > 0.15)`,
+          sql`(${emissionFactors.search} @@ ${orTsq} or ${emissionFactors.search} @@ ${tsq} or ${trigram} > 0.35)`,
           units?.length ? inArray(emissionFactors.unit, units) : isNotNull(emissionFactors.unit),
           scopeHint ? eq(emissionFactors.scopeHint, scopeHint) : undefined,
         ),

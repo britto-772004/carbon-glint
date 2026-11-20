@@ -37,14 +37,12 @@ export const createEmissionsControllers = ({ emissions }: Services) => {
   };
   const listEmissions: Controller<'listEmissions'> = async (req, res, next) => {
     try {
-      res
-        .status(200)
-        .json(
-          await emissions.list(actorOf(req), filters(req.query), {
-            limit: req.query.limit ?? 50,
-            offset: req.query.offset ?? 0,
-          }),
-        );
+      res.status(200).json(
+        await emissions.list(actorOf(req), filters(req.query), {
+          limit: req.query.limit ?? 50,
+          offset: req.query.offset ?? 0,
+        }),
+      );
     } catch (err) {
       next(err);
     }
