@@ -6,6 +6,7 @@ import { ForgotPasswordContainer } from './containers/auth/ForgotPasswordContain
 import { LoginContainer } from './containers/auth/LoginContainer';
 import { SignUpContainer } from './containers/auth/SignUpContainer';
 import { VerifyEmailContainer } from './containers/auth/VerifyEmailContainer';
+import { ActivityDefinitionDetailContainer } from './containers/activity-definitions/ActivityDefinitionDetailContainer';
 import { ActivityDefinitionsContainer } from './containers/activity-definitions/ActivityDefinitionsContainer';
 import { OrgUnitsContainer } from './containers/org-units/OrgUnitsContainer';
 import { OnboardingContainer } from './containers/onboarding/OnboardingContainer';
@@ -45,6 +46,7 @@ export const routes: RouteObject[] = [
           { path: 'dashboard', element: soon('Dashboard', 'Your emissions overview will appear here.') },
           { path: 'org-units', element: <OrgUnitsContainer /> },
           { path: 'activity-definitions', element: <ActivityDefinitionsContainer /> },
+          { path: 'activity-definitions/:activityDefinitionId', element: <ActivityDefinitionDetailContainer /> },
           { path: 'emission-factors', element: soon('Emission Factors', 'Matched factors and calculated emissions.') },
           { path: 'reports', element: soon('Reports', 'Country-format ESG reports.') },
           { path: 'assistant', element: soon('Assistant', 'Ask questions about your emissions.') },
