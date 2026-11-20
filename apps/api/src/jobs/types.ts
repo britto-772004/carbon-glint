@@ -7,6 +7,8 @@ export interface JobPayloads {
   'datasource.import': { tenantId: string; dataSourceId: string; onlyValidRows: boolean };
   /** Match emission factors and calculate CO2e for an Activity Definition. */
   'calculation.run': { tenantId: string; activityDefinitionId: string };
+  /** Render a report PDF. */
+  'report.generate': { tenantId: string; reportId: string };
 }
 
 export type JobName = keyof JobPayloads;

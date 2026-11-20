@@ -8,6 +8,7 @@ import { createDataSourceService, type DataSourceService } from './data-source.s
 import { createTaxonomyService, type TaxonomyService } from './taxonomy.service.js';
 import { createCalculationService, type CalculationService } from './calculation.service.js';
 import { createEmissionsService, type EmissionsService } from './emissions.service.js';
+import { createReportService, type ReportService } from './report.service.js';
 import { createAuthService, type AuthService } from './auth.service.js';
 import { createHealthService, type HealthService } from './health.service.js';
 import { createOrgUnitService, type OrgUnitService } from './org-unit.service.js';
@@ -37,6 +38,7 @@ export interface Services {
   dataSources: DataSourceService;
   calculations: CalculationService;
   emissions: EmissionsService;
+  reports: ReportService;
 }
 
 export const createServices = (deps: ServiceDeps): Services => {
@@ -54,5 +56,6 @@ export const createServices = (deps: ServiceDeps): Services => {
     dataSources: createDataSourceService(deps),
     calculations,
     emissions: createEmissionsService(deps, calculations),
+    reports: createReportService(deps),
   };
 };

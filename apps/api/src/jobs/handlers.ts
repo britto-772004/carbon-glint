@@ -16,11 +16,10 @@ export const createJobHandlers = ({ mailer, services, logger }: JobDeps): JobHan
   'email.send': (message) => mailer.send(message),
   'datasource.import': (payload) => services.dataSources.runImport(payload),
   'calculation.run': async (payload) => {
-    const run = (services as Partial<Services> & { calculations?: { run(p: typeof payload): Promise<void> } })
-      .calculations;
-    if (run) await run.run(payload);
-    else logger.info(payload, 'calculation engine not available yet');
+    const result = await services.calculations.run(payload);
+    logger.info({ ...payload, ...result }, 'emissions calculated');
   },
+  'report.generate': (payload) => services.reports.generate(payload),
 });
 
 export async function dispatchJob(handlers: JobHandlers, name: string, payload: unknown): Promise<void> {

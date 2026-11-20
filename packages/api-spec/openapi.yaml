@@ -1592,7 +1592,8 @@ components:
     Report:
       type: object
       additionalProperties: false
-      required: [id, orgUnitId, orgUnitName, format, formatName, periodStart, periodEnd, status, error, createdAt, generatedAt]
+      required:
+        [id, orgUnitId, orgUnitName, format, formatName, periodStart, periodEnd, status, error, createdAt, generatedAt]
       properties:
         id:
           type: string

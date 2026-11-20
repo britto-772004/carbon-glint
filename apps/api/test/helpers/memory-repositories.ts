@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import type {
   CalculationModel,
+  ReportModel,
   EfOverrideModel,
   EfSourceModel,
   EmissionFactorModel,
@@ -42,6 +43,7 @@ export interface MemoryStore {
   emissionFactors: EmissionFactorModel[];
   calculations: CalculationModel[];
   efOverrides: EfOverrideModel[];
+  reports: ReportModel[];
   sessions: Map<string, { record: SessionRecord; expiresAt: number }>;
   rateCounters: Map<string, { count: number; resetAt: number }>;
 }
@@ -93,6 +95,7 @@ export function createMemoryStore(): MemoryStore {
     emissionFactors: [],
     calculations: [],
     efOverrides: [],
+    reports: [],
     sessions: new Map(),
     rateCounters: new Map(),
   };
@@ -569,6 +572,36 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
             c.tenantId === tenantId &&
             (!filter?.activityDefinitionIds?.length || filter.activityDefinitionIds.includes(c.activityDefinitionId)),
         ),
+    },
+
+    reports: {
+      list: async (tenantId) => store.reports.filter((r) => r.tenantId === tenantId).reverse(),
+      findById: async (tenantId, id) => store.reports.find((r) => r.tenantId === tenantId && r.id === id) ?? null,
+      findForJob: async (id) => store.reports.find((r) => r.id === id) ?? null,
+      async create(data) {
+        const r = {
+          id: randomUUID(),
+          status: 'queued',
+          fileKey: null,
+          error: null,
+          createdAt: now(),
+          generatedAt: null,
+          ...data,
+        } as ReportModel;
+        store.reports.push(r);
+        return r;
+      },
+      async update(id, data) {
+        const r = store.reports.find((x) => x.id === id);
+        if (!r) return null;
+        Object.assign(r, data);
+        return r;
+      },
+      async delete(tenantId, id) {
+        const before = store.reports.length;
+        store.reports = store.reports.filter((r) => !(r.tenantId === tenantId && r.id === id));
+        return store.reports.length < before;
+      },
     },
 
     sessions: {

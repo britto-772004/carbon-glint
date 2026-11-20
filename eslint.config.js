@@ -52,7 +52,7 @@ export default tseslint.config(
 
   // ── Backend ────────────────────────────────────────────────────────────────
   {
-    files: ['apps/api/**/*.ts'],
+    files: ['apps/api/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.node },
   },
   // Layering: controller → service → repository → model. Each layer may only reach downwards.
