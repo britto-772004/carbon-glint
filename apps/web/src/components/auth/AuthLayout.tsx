@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
+import ArrowBack from '@mui/icons-material/ArrowBack';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { Link as RouterLink } from 'react-router';
 import { BrandMark } from '../common/BrandMark';
 
 interface AuthLayoutProps {
@@ -11,10 +14,12 @@ interface AuthLayoutProps {
   subtitle?: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** Where the back button goes. Defaults to the landing page. */
+  backTo?: string;
 }
 
 /** Split layout: brand panel (hidden on phones) + form card. */
-export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+export function AuthLayout({ title, subtitle, children, footer, backTo = '/' }: AuthLayoutProps) {
   return (
     <Box sx={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
       <Box
@@ -41,7 +46,24 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
           GHG Protocol · DEFRA · ADEME · EPA · IPCC
         </Typography>
       </Box>
-      <Box sx={{ display: 'grid', placeItems: 'center', p: { xs: 2, sm: 4 } }}>
+      <Box
+        sx={{ position: 'relative', display: 'grid', placeItems: 'center', p: { xs: 2, sm: 4 }, pt: { xs: 9, sm: 4 } }}
+      >
+        <Button
+          component={RouterLink}
+          to={backTo}
+          startIcon={<ArrowBack />}
+          color="inherit"
+          sx={{
+            position: 'absolute',
+            top: { xs: 12, sm: 24 },
+            left: { xs: 8, sm: 24 },
+            color: 'text.secondary',
+            fontWeight: 600,
+          }}
+        >
+          Back
+        </Button>
         <Box sx={{ width: '100%', maxWidth: 440 }}>
           <Box sx={{ display: { md: 'none' }, mb: 3 }}>
             <BrandMark />

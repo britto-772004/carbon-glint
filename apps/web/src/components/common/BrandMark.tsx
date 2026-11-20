@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import type { SxProps, Theme } from '@mui/material/styles';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useId } from 'react';
@@ -26,17 +27,45 @@ export function BrandLogo({ size = 32 }: { size?: number }) {
   );
 }
 
-export function BrandMark({ inverted = false, size = 32 }: { inverted?: boolean; size?: number }) {
+export function BrandMark({
+  inverted = false,
+  size = 32,
+  textSx,
+  accentSx,
+  fontSize,
+}: {
+  inverted?: boolean;
+  size?: number;
+  /** Extra styles for the wordmark and for the accent word (used by the floating header to animate colours). */
+  textSx?: SxProps<Theme>;
+  accentSx?: SxProps<Theme>;
+  /** Wordmark size in px (defaults to the h6 size). */
+  fontSize?: number;
+}) {
   return (
     <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
       <BrandLogo size={size} />
       <Typography
         variant="h6"
         component="span"
-        sx={{ fontWeight: 700, letterSpacing: '-0.01em', color: inverted ? 'common.white' : 'text.primary' }}
+        sx={[
+          {
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+            fontSize,
+            color: inverted ? 'common.white' : 'text.primary',
+          },
+          ...(Array.isArray(textSx) ? textSx : [textSx]),
+        ]}
       >
         Carbon
-        <Box component="span" sx={{ color: inverted ? 'secondary.light' : 'primary.main' }}>
+        <Box
+          component="span"
+          sx={[
+            { color: inverted ? 'secondary.light' : 'primary.main' },
+            ...(Array.isArray(accentSx) ? accentSx : [accentSx]),
+          ]}
+        >
           {' '}
           Glint
         </Box>
