@@ -51,6 +51,22 @@ export function ActivityDefinitionDetailContainer() {
   const detail = useQuery(getActivityDefinitionOptions({ path }));
   const activities = useQuery(listActivitiesOptions({ path, query: { limit: PAGE_SIZE, offset: page * PAGE_SIZE } }));
   const orgUnits = useQuery(listOrgUnitsOptions());
+  // Calculation runs in the worker: refresh everything that shows emissions (and their AI rationale) now and as it finishes.
+  const refreshEmissions = () => {
+    const ids = [
+      'listEmissions',
+      'getEmissionTrace',
+      'getEmissionsHeatmap',
+      'getEmissionsOrgTree',
+      'getEmissionsSummary',
+    ];
+    const run = () =>
+      queryClient.invalidateQueries({
+        predicate: (q) => ids.includes((q.queryKey[0] as { _id?: string } | undefined)?._id ?? ''),
+      });
+    void run();
+    for (const ms of [4_000, 10_000, 25_000, 60_000]) setTimeout(() => void run(), ms);
+  };
   const refresh = () =>
     Promise.all([
       // the list page (any scope filter) and the board counts show status/counts too
@@ -94,6 +110,7 @@ export function ActivityDefinitionDetailContainer() {
     ...publishActivityDefinitionMutation(),
     onSuccess: () => {
       setNotice('Published. Emission factors are being matched and emissions calculated.');
+      refreshEmissions();
       void refresh();
     },
   });
@@ -120,6 +137,7 @@ export function ActivityDefinitionDetailContainer() {
       setRecalcOpen(false);
       setResetOverrides(false);
       setNotice('Recalculation started. Emissions update in a few seconds.');
+      refreshEmissions();
       void refresh();
     },
   });
