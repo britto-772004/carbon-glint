@@ -28,7 +28,7 @@ export function parseGenericFactorCsv(
   csv: string,
   source: ParsedDataset['source'],
 ): { dataset: ParsedDataset; errors: string[] } {
-  const rows = Papa.parse<Record<string, string>>(csv.replace(/^﻿/, ''), { header: true, skipEmptyLines: true }).data;
+  const rows = Papa.parse<Record<string, string>>(csv.replace(/^\uFEFF/, ''), { header: true, skipEmptyLines: true }).data;
   const errors: string[] = [];
   const factors: ParsedFactor[] = [];
   rows.forEach((r, i) => {

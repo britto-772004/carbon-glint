@@ -14,10 +14,21 @@ import {
   type NewCalculationModel,
   type NewEfOverrideModel,
 } from '../models/index.js';
-import type { EmissionFact } from '../services/emission-aggregates.js';
-
 /** A calculation joined with its activity, definition, category, BU and factor — one emissions row. */
-export interface EmissionFactRow extends EmissionFact {
+export interface EmissionFactRow {
+  activityId: string;
+  activityDefinitionId: string;
+  activityDefinitionName: string;
+  scope: 1 | 2 | 3;
+  categoryId: string;
+  categoryName: string;
+  orgUnitId: string | null;
+  orgUnitName: string | null;
+  description: string;
+  periodStart: string;
+  periodEnd: string;
+  status: CalculationModel['status'];
+  co2eKg: number;
   measure: number;
   unit: string;
   method: CalculationModel['method'];
