@@ -19,7 +19,8 @@
     "test:integration": "vitest run --project integration",
     "test:watch": "vitest --project unit",
     "seed:superadmin": "tsx --env-file-if-exists=.env src/seed-superadmin.ts",
-    "ef:import": "tsx --env-file-if-exists=.env src/import-factors.ts"
+    "ef:import": "tsx --env-file-if-exists=.env src/import-factors.ts",
+    "dev:worker": "tsx watch --env-file-if-exists=.env src/worker.ts"
   },
   "dependencies": {
     "@carbon-glint/api-spec": "workspace:*",

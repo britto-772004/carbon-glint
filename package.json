@@ -8,7 +8,7 @@
   },
   "scripts": {
     "generate": "pnpm --filter @carbon-glint/api-spec --filter @carbon-glint/sdk run generate",
-    "dev": "pnpm generate && pnpm --parallel --filter @carbon-glint/api --filter @carbon-glint/web run dev",
+    "dev": "pnpm generate && pnpm --parallel --filter @carbon-glint/api --filter @carbon-glint/web run \"/^dev(:worker)?$/\"",
     "build": "pnpm generate && pnpm -r run build",
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck",
