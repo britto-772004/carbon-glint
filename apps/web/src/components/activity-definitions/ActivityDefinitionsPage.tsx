@@ -5,14 +5,14 @@ import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
-import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Tabs from '@mui/material/Tabs';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { SCOPES, scopeMeta } from './scope';
@@ -25,6 +25,11 @@ export interface ActivityDefinitionsPageProps {
   onScopeFilter: (s: Scope | 'all') => void;
   onCreate: () => void;
   onOpen: (id: string) => void;
+  /** Scope → category board shown above the list. */
+  board?: ReactNode;
+  /** Name of the category the list is filtered to (from the board). */
+  categoryFilterName?: string;
+  onClearCategoryFilter?: () => void;
   dialog: ReactNode;
 }
 
@@ -47,16 +52,33 @@ export function ActivityDefinitionsPage(props: ActivityDefinitionsPageProps) {
             Classify emission sources by scope and GHG category, then upload their data.
           </Typography>
         </div>
-        <Button variant="contained" onClick={props.onCreate}>
+        <Button variant="contained" onClick={props.onCreate} data-tour="ad-new">
           New activity definition
         </Button>
       </Stack>
-      <Tabs value={props.scopeFilter} onChange={(_, v: Scope | 'all') => props.onScopeFilter(v)}>
-        <Tab value="all" label="All scopes" />
-        {SCOPES.map((s) => (
-          <Tab key={s.value} value={s.value} label={s.short} />
-        ))}
-      </Tabs>
+      {props.board}
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mr: 1 }}>
+          Your definitions
+        </Typography>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={props.scopeFilter}
+          onChange={(_, v: Scope | 'all' | null) => v !== null && props.onScopeFilter(v)}
+          aria-label="Filter by scope"
+        >
+          <ToggleButton value="all">All</ToggleButton>
+          {SCOPES.map((s) => (
+            <ToggleButton key={s.value} value={s.value}>
+              {s.short}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+        {props.categoryFilterName && (
+          <Chip size="small" label={props.categoryFilterName} onDelete={props.onClearCategoryFilter} color="primary" />
+        )}
+      </Stack>
       {error && <Alert severity="error">{error}</Alert>}
       <Card>
         {isLoading ? (

@@ -6,18 +6,43 @@ import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
 import { formatCo2e, pct } from '../emissions/format';
 
-function Kpi({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: string }) {
+function Kpi({
+  label,
+  value,
+  hint,
+  accent,
+  hero,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  accent?: string;
+  hero?: boolean;
+}) {
   return (
-    <Card sx={{ height: '100%', borderTop: 4, borderTopColor: accent ?? 'primary.main' }}>
-      <CardContent>
-        <Typography variant="body2" color="text.secondary">
+    <Card
+      sx={{
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        ...(hero
+          ? {
+              color: 'common.white',
+              border: 0,
+              background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 60%, #65a30d 130%)',
+            }
+          : { borderLeft: 4, borderLeftColor: accent ?? 'primary.main' }),
+      }}
+    >
+      <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Typography variant="caption" sx={{ opacity: hero ? 0.85 : 1 }} color={hero ? 'inherit' : 'text.secondary'}>
           {label}
         </Typography>
-        <Typography variant="h5" sx={{ mt: 0.5 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
           {value}
         </Typography>
         {hint && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ opacity: hero ? 0.85 : 1 }} color={hero ? 'inherit' : 'text.secondary'}>
             {hint}
           </Typography>
         )}
@@ -32,7 +57,7 @@ export function KpiCards({ data, isLoading }: { data?: EmissionSummary; isLoadin
       <Grid container spacing={2} role="status">
         {[0, 1, 2, 3, 4].map((i) => (
           <Grid key={i} size={{ xs: 6, md: 'grow' }}>
-            <Skeleton variant="rectangular" height={104} />
+            <Skeleton variant="rectangular" height={84} />
           </Grid>
         ))}
       </Grid>
@@ -43,6 +68,7 @@ export function KpiCards({ data, isLoading }: { data?: EmissionSummary; isLoadin
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, sm: 6, md: 'grow' }}>
         <Kpi
+          hero
           label="Total emissions"
           value={formatCo2e(t.total)}
           hint={`${data.activityCount.toLocaleString()} activities`}

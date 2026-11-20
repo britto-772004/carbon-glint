@@ -1,14 +1,14 @@
 import type { OrgUnit, OrgUnitType } from '@carbon-glint/sdk';
 
-export const ORG_UNIT_TYPES: { value: OrgUnitType; label: string; icon: string }[] = [
-  { value: 'hq', label: 'Headquarters', icon: '🏛️' },
-  { value: 'branch', label: 'Branch', icon: '🏢' },
-  { value: 'plant', label: 'Plant / factory', icon: '🏭' },
-  { value: 'office', label: 'Office', icon: '🏬' },
-  { value: 'warehouse', label: 'Warehouse', icon: '📦' },
-  { value: 'campus', label: 'Campus', icon: '🎓' },
-  { value: 'store', label: 'Store', icon: '🛍️' },
-  { value: 'other', label: 'Other', icon: '📍' },
+export const ORG_UNIT_TYPES: { value: OrgUnitType; label: string }[] = [
+  { value: 'hq', label: 'Headquarters' },
+  { value: 'branch', label: 'Branch' },
+  { value: 'plant', label: 'Plant / factory' },
+  { value: 'office', label: 'Office' },
+  { value: 'warehouse', label: 'Warehouse' },
+  { value: 'campus', label: 'Campus' },
+  { value: 'store', label: 'Store' },
+  { value: 'other', label: 'Other' },
 ];
 export const typeMeta = (t: OrgUnitType) => ORG_UNIT_TYPES.find((x) => x.value === t)!;
 

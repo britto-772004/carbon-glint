@@ -1,3 +1,4 @@
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import type { FormEvent } from 'react';
 import type { ChatMessage } from '@carbon-glint/sdk';
 import Markdown from 'react-markdown';
@@ -59,7 +60,9 @@ export function ChatThread(p: ChatThreadProps) {
               sx={{ alignItems: 'flex-start', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}
             >
               {m.role === 'assistant' && (
-                <Avatar sx={{ width: 30, height: 30, bgcolor: 'primary.main', fontSize: 16 }}>🌿</Avatar>
+                <Avatar sx={{ width: 30, height: 30, bgcolor: 'primary.main' }}>
+                  <AutoAwesomeOutlined sx={{ fontSize: 16 }} />
+                </Avatar>
               )}
               <Box
                 sx={{

@@ -1,3 +1,4 @@
+import { OrgUnitTypeIcon } from './OrgUnitTypeIcon';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
@@ -7,7 +8,6 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Typography from '@mui/material/Typography';
 import { countryName } from '../../lib/countries';
 import type { TreeRow } from '../../lib/org-tree';
 import { typeMeta, type OrgUnitActions } from './types';
@@ -34,9 +34,12 @@ export function OrgUnitTable({ rows, onAddChild, onEdit, onDelete }: OrgUnitTabl
           {rows.map(({ unit, depth, childCount }) => (
             <TableRow key={unit.id} sx={{ opacity: unit.active ? 1 : 0.6 }}>
               <TableCell sx={{ pl: 2 + depth * 3 }}>
-                <Typography component="span" sx={{ mr: 1 }} aria-hidden>
-                  {typeMeta(unit.type).icon}
-                </Typography>
+                <OrgUnitTypeIcon
+                  type={unit.type}
+                  fontSize="small"
+                  sx={{ mr: 1, verticalAlign: 'middle', color: 'primary.main' }}
+                  titleAccess={typeMeta(unit.type).label}
+                />
                 {unit.name}
                 {!unit.active && <Chip size="small" label="Inactive" sx={{ ml: 1 }} />}
               </TableCell>

@@ -17,12 +17,12 @@ describe('session routing', () => {
     expect(router.state.location.pathname).toBe('/login');
   });
 
-  it('sends a signed-in, onboarded admin from /login to the dashboard with tabs and tenant name', async () => {
+  it('sends a signed-in, onboarded admin from /login to the dashboard with side navigation and tenant name', async () => {
     signIn(buildMe());
     const { router } = renderApp('/login');
     await waitFor(() => expect(router.state.location.pathname).toBe('/app/dashboard'));
-    expect(await screen.findByRole('tab', { name: 'Org Units' })).toBeInTheDocument();
-    expect(screen.getByText('Acme')).toBeInTheDocument();
+    expect((await screen.findAllByRole('link', { name: 'Org Units' })).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Acme').length).toBeGreaterThan(0);
   });
 
   it('forces onboarding before the app', async () => {

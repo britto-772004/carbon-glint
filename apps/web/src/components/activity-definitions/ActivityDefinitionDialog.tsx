@@ -31,6 +31,8 @@ export interface ActivityDefinitionDialogProps {
   onScopeChange: (scope: Scope) => void;
   /** Categories of the selected scope (already ordered: recommended → others → custom). */
   categories: GhgCategory[];
+  /** Pre-selected category (e.g. from the scope board). */
+  initialCategoryId?: string | null;
   orgUnits: OrgUnit[];
   isSubmitting: boolean;
   error?: string;
@@ -110,12 +112,16 @@ export function ActivityDefinitionDialog(props: ActivityDefinitionDialogProps) {
                   ))}
                 </TextField>
                 <TextField
-                  key={`cat-${scope}-${categories.length}`}
+                  key={`cat-${scope}-${categories.length}-${props.initialCategoryId ?? ''}`}
                   name="categoryId"
                   label="GHG category"
                   select
                   required
-                  defaultValue={custom.at(-1)?.id ?? ''}
+                  defaultValue={
+                    (props.initialCategoryId && categories.some((c) => c.id === props.initialCategoryId)
+                      ? props.initialCategoryId
+                      : custom.at(-1)?.id) ?? ''
+                  }
                   helperText={recommended.length ? 'Recommended for your industry are listed first.' : undefined}
                 >
                   {[

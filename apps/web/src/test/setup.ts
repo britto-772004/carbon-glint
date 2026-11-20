@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { createElement } from 'react';
-import { afterAll, afterEach, beforeAll, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
 import { configureSdk } from '@carbon-glint/sdk';
 import { server } from './mocks/server';
 import { resetSession } from './mocks/session';
@@ -43,6 +43,11 @@ beforeAll(() =>
     },
   }),
 );
+
+// The guided tour offers itself on first visit; tests opt in explicitly (see TourContainer.test.tsx).
+beforeEach(() => {
+  window.localStorage.setItem('cg.tour.v1.seen', '1');
+});
 
 afterEach(() => {
   server.resetHandlers();

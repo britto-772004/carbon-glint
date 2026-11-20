@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  deleteActivitiesMutation,
   deleteActivityDefinitionMutation,
   deleteDataSourceMutation,
   getActivityDefinitionOptions,
@@ -11,6 +12,7 @@ import {
   listActivitiesQueryKey,
   listOrgUnitsOptions,
   publishActivityDefinitionMutation,
+  recalculateActivityDefinitionMutation,
   suggestColumnMappingMutation,
   updateDataSourceLayoutMutation,
   uploadDataSourceMutation,
@@ -41,6 +43,10 @@ export function ActivityDefinitionDetailContainer() {
   const [suggestion, setSuggestion] = useState<MappingSuggestion>();
   const [onlyValidRows, setOnlyValidRows] = useState(false);
   const [notice, setNotice] = useState<string>();
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [recalcOpen, setRecalcOpen] = useState(false);
+  const [resetOverrides, setResetOverrides] = useState(false);
 
   const detail = useQuery(getActivityDefinitionOptions({ path }));
   const activities = useQuery(listActivitiesOptions({ path, query: { limit: PAGE_SIZE, offset: page * PAGE_SIZE } }));
@@ -92,6 +98,28 @@ export function ActivityDefinitionDetailContainer() {
     onSuccess: () => navigate('/app/activity-definitions'),
   });
   const removeDs = useMutation({ ...deleteDataSourceMutation(), onSuccess: refresh });
+  const removeActivities = useMutation({
+    ...deleteActivitiesMutation(),
+    onSuccess: ({ deleted }) => {
+      setSelectedIds([]);
+      setDeleteOpen(false);
+      setNotice(
+        `${deleted} ${deleted === 1 ? 'activity' : 'activities'} deleted.` +
+          (detail.data?.definition.status === 'published' ? ' Press Recalculate to refresh the emissions.' : ''),
+      );
+      void refresh();
+    },
+  });
+  const recalculate = useMutation({
+    ...recalculateActivityDefinitionMutation(),
+    onSuccess: () => {
+      setRecalcOpen(false);
+      setResetOverrides(false);
+      setNotice('Recalculation started. Emissions update in a few seconds.');
+      void refresh();
+    },
+  });
+  const pageIds = (activities.data?.items ?? []).map((a) => a.id);
 
   const closeWizard = () => {
     setWizardOpen(false);
@@ -125,7 +153,30 @@ export function ActivityDefinitionDetailContainer() {
       onBack={() => navigate('/app/activity-definitions')}
       onPublish={() => publish.mutate({ path })}
       isPublishing={publish.isPending}
-      actionError={toErrorMessage(publish.error ?? removeAd.error ?? removeDs.error)}
+      actionError={toErrorMessage(
+        publish.error ?? removeAd.error ?? removeDs.error ?? removeActivities.error ?? recalculate.error,
+      )}
+      recalcOpen={recalcOpen}
+      onOpenRecalc={() => setRecalcOpen(true)}
+      onCloseRecalc={() => setRecalcOpen(false)}
+      resetOverrides={resetOverrides}
+      onToggleResetOverrides={setResetOverrides}
+      onRecalculate={() => recalculate.mutate({ path, body: { resetOverrides } })}
+      isRecalculating={recalculate.isPending}
+      selectedIds={selectedIds}
+      onToggleSelect={(id) => setSelectedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))}
+      onToggleSelectPage={() =>
+        setSelectedIds((cur) =>
+          pageIds.every((id) => cur.includes(id))
+            ? cur.filter((id) => !pageIds.includes(id))
+            : [...new Set([...cur, ...pageIds])],
+        )
+      }
+      deleteOpen={deleteOpen}
+      onOpenDelete={() => setDeleteOpen(true)}
+      onCloseDelete={() => setDeleteOpen(false)}
+      onDeleteSelected={() => removeActivities.mutate({ path, body: { activityIds: selectedIds } })}
+      isDeleting={removeActivities.isPending}
       notice={notice}
       onDelete={() => removeAd.mutate({ path })}
       onAddDataSource={() => setWizardOpen(true)}

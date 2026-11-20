@@ -34,6 +34,12 @@ export const theme = createTheme({
   },
   components: {
     MuiButton: { defaultProps: { disableElevation: true } },
-    MuiCard: { defaultProps: { variant: 'outlined' } },
+    MuiCard: { defaultProps: { variant: 'outlined' }, styleOverrides: { root: { borderRadius: 14 } } },
+    MuiTabs: { styleOverrides: { root: { minHeight: 40 } } },
+    MuiTab: { styleOverrides: { root: { minHeight: 40, paddingTop: 8, paddingBottom: 8, fontSize: 14 } } },
+    MuiToggleButton: {
+      styleOverrides: { root: { textTransform: 'none', fontSize: 13, paddingTop: 4, paddingBottom: 4 } },
+    },
+    MuiChip: { styleOverrides: { root: { fontWeight: 600 } } },
   },
 });

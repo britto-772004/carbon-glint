@@ -35,6 +35,10 @@ export interface LasagneHeatmapProps {
   onBucket: (b: 'month' | 'quarter' | 'year') => void;
   showTable: boolean;
   onToggleTable: () => void;
+  /** Stretch to the parent's height (dashboard hero); otherwise height follows the row count. */
+  fill?: boolean;
+  /** Hide the "By scope / By business unit" switch (e.g. when space is tight). */
+  compactControls?: boolean;
 }
 
 const MAX_ROWS = 25;
@@ -47,7 +51,7 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
   const max = Math.max(1, ...rows.flatMap((r) => r.cells));
   const option = data && {
     textStyle: { fontFamily: theme.typography.fontFamily },
-    grid: { left: 8, right: 16, top: 8, bottom: 56, containLabel: true },
+    grid: { left: 8, right: 16, top: 8, bottom: 48, containLabel: true },
     tooltip: {
       formatter: (params: { data: [number, number, number | '-'] }) => {
         const [x, y, v] = params.data;
@@ -95,9 +99,16 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
     ],
   };
 
+  const fill = Boolean(p.fill);
   return (
-    <Card>
-      <CardContent>
+    <Card data-tour="dash-lasagne" sx={fill ? { height: '100%', display: 'flex', flexDirection: 'column' } : undefined}>
+      <CardContent
+        sx={
+          fill
+            ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', '&:last-child': { pb: 1.5 } }
+            : undefined
+        }
+      >
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ justifyContent: 'space-between', mb: 1 }}>
           <div>
             <Typography variant="h6">{p.title}</Typography>
@@ -116,7 +127,13 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
             </Breadcrumbs>
           </div>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-            <ToggleButtonGroup size="small" exclusive value={p.groupMode} onChange={(_, v) => v && p.onGroupMode(v)}>
+            <ToggleButtonGroup
+              size="small"
+              exclusive
+              value={p.groupMode}
+              onChange={(_, v) => v && p.onGroupMode(v)}
+              sx={{ display: p.compactControls ? 'none' : undefined }}
+            >
               <ToggleButton value="ghg">By scope</ToggleButton>
               <ToggleButton value="bu">By business unit</ToggleButton>
             </ToggleButtonGroup>
@@ -132,7 +149,12 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
         </Stack>
 
         {p.isLoading ? (
-          <Skeleton role="status" variant="rectangular" height={320} />
+          <Skeleton
+            role="status"
+            variant="rectangular"
+            height={fill ? '100%' : 320}
+            sx={{ flex: fill ? 1 : undefined }}
+          />
         ) : !data || rows.length === 0 ? (
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography color="text.secondary">
@@ -140,8 +162,8 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
             </Typography>
           </Box>
         ) : p.showTable ? (
-          <TableContainer>
-            <Table size="small" aria-label="Heatmap data">
+          <TableContainer sx={fill ? { flex: 1, minHeight: 0, overflow: 'auto' } : undefined}>
+            <Table size="small" stickyHeader={fill} aria-label="Heatmap data">
               <TableHead>
                 <TableRow>
                   <TableCell>{p.breadcrumb.at(-1)}</TableCell>
@@ -194,7 +216,12 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
               echarts={echarts}
               option={option}
               notMerge
-              style={{ height: Math.max(220, rows.length * 34 + 90), width: '100%' }}
+              style={{
+                height: fill ? '100%' : Math.max(220, rows.length * 34 + 90),
+                width: '100%',
+                flex: fill ? 1 : undefined,
+                minHeight: 0,
+              }}
               onEvents={{
                 click: (params: { data?: [number, number, unknown] }) => {
                   if (!params.data || !p.onDrill) return;

@@ -3,6 +3,13 @@ import type { ActivityDefinitionDetail, ActivityPage, OrgUnit } from '@carbon-gl
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
+import Checkbox from '@mui/material/Checkbox';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import CardHeader from '@mui/material/CardHeader';
 import Chip from '@mui/material/Chip';
 import Skeleton from '@mui/material/Skeleton';
@@ -29,6 +36,23 @@ export interface ActivityDefinitionDetailPageProps {
   onBack: () => void;
   onPublish: () => void;
   isPublishing: boolean;
+  /** Recalculate (published definitions): dialog with an option to reset manual overrides. */
+  recalcOpen: boolean;
+  onOpenRecalc: () => void;
+  onCloseRecalc: () => void;
+  resetOverrides: boolean;
+  onToggleResetOverrides: (v: boolean) => void;
+  onRecalculate: () => void;
+  isRecalculating: boolean;
+  /** Row selection + bulk delete. */
+  selectedIds: string[];
+  onToggleSelect: (id: string) => void;
+  onToggleSelectPage: () => void;
+  deleteOpen: boolean;
+  onOpenDelete: () => void;
+  onCloseDelete: () => void;
+  onDeleteSelected: () => void;
+  isDeleting: boolean;
   actionError?: string;
   notice?: string;
   onDelete: () => void;
@@ -45,6 +69,7 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
   const { definition: d, dataSources } = p.detail;
   const unitName = (id: string | null) => p.orgUnits.find((u) => u.id === id)?.name ?? '—';
   const scope = scopeMeta(d.scope);
+  const pageItems = p.activities?.items ?? [];
 
   return (
     <Stack spacing={3}>
@@ -78,9 +103,15 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
           <Button variant="outlined" onClick={p.onAddDataSource}>
             Add data source
           </Button>
-          <Button variant="contained" onClick={p.onPublish} loading={p.isPublishing} disabled={d.activityCount === 0}>
-            {d.status === 'published' ? 'Recalculate' : 'Publish'}
-          </Button>
+          {d.status === 'published' ? (
+            <Button variant="contained" onClick={p.onOpenRecalc} loading={p.isRecalculating}>
+              Recalculate
+            </Button>
+          ) : (
+            <Button variant="contained" onClick={p.onPublish} loading={p.isPublishing} disabled={d.activityCount === 0}>
+              Publish
+            </Button>
+          )}
         </Stack>
       </Stack>
 
@@ -148,11 +179,37 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
       </Card>
 
       <Card>
-        <CardHeader title="Activities" />
+        <CardHeader
+          title="Activities"
+          subheader={
+            p.selectedIds.length > 0
+              ? `${p.selectedIds.length} selected`
+              : 'Select rows to delete them, then recalculate to refresh emissions.'
+          }
+          action={
+            p.selectedIds.length > 0 && (
+              <Button color="error" variant="outlined" size="small" onClick={p.onOpenDelete} sx={{ mt: 1, mr: 1 }}>
+                Delete selected ({p.selectedIds.length})
+              </Button>
+            )
+          }
+        />
         <TableContainer>
           <Table size="small" aria-label="Activities">
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    size="small"
+                    checked={pageItems.length > 0 && pageItems.every((a) => p.selectedIds.includes(a.id))}
+                    indeterminate={
+                      pageItems.some((a) => p.selectedIds.includes(a.id)) &&
+                      !pageItems.every((a) => p.selectedIds.includes(a.id))
+                    }
+                    onChange={p.onToggleSelectPage}
+                    slotProps={{ input: { 'aria-label': 'Select all activities on this page' } }}
+                  />
+                </TableCell>
                 <TableCell>Row</TableCell>
                 <TableCell>Description</TableCell>
                 <TableCell>Business unit</TableCell>
@@ -163,8 +220,16 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
               </TableRow>
             </TableHead>
             <TableBody>
-              {(p.activities?.items ?? []).map((a) => (
-                <TableRow key={a.id}>
+              {pageItems.map((a) => (
+                <TableRow key={a.id} selected={p.selectedIds.includes(a.id)} hover>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={p.selectedIds.includes(a.id)}
+                      onChange={() => p.onToggleSelect(a.id)}
+                      slotProps={{ input: { 'aria-label': `Select row ${a.rowNumber}` } }}
+                    />
+                  </TableCell>
                   <TableCell>{a.rowNumber}</TableCell>
                   <TableCell>{a.description}</TableCell>
                   <TableCell>{unitName(a.orgUnitId)}</TableCell>
@@ -189,6 +254,44 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
         />
       </Card>
       {p.wizard}
+
+      <Dialog open={p.deleteOpen} onClose={p.onCloseDelete} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete {p.selectedIds.length} activities?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            The rows and their calculated emissions (including any overrides) are removed permanently.
+            {d.status === 'published' && ' Recalculate afterwards to refresh the definition.'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={p.onCloseDelete}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={p.onDeleteSelected} loading={p.isDeleting}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={p.recalcOpen} onClose={p.onCloseRecalc} maxWidth="xs" fullWidth>
+        <DialogTitle>Recalculate emissions</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 1 }}>
+            Re-runs emission factor matching and the CO2e calculation for all {d.activityCount.toLocaleString()}{' '}
+            activities of this definition.
+          </DialogContentText>
+          <FormControlLabel
+            control={
+              <Checkbox checked={p.resetOverrides} onChange={(e) => p.onToggleResetOverrides(e.target.checked)} />
+            }
+            label="Also reset manual overrides"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={p.onCloseRecalc}>Cancel</Button>
+          <Button variant="contained" onClick={p.onRecalculate} loading={p.isRecalculating}>
+            Recalculate
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

@@ -15,7 +15,7 @@ describe('Activity Definitions list', () => {
     const table = await screen.findByRole('table', { name: 'Activity definitions' });
     expect(within(table).getByText('Grid electricity')).toBeInTheDocument();
     expect(within(table).getByText('1,200')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Scope 3' }));
+    await user.click(screen.getByRole('button', { name: 'Scope 3' }));
     await waitFor(() =>
       expect(
         within(screen.getByRole('table', { name: 'Activity definitions' })).queryByText('Grid electricity'),

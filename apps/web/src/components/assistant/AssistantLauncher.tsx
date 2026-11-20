@@ -1,3 +1,4 @@
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import type { ReactNode } from 'react';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
@@ -27,7 +28,8 @@ export function AssistantLauncher({
         sx={{ position: 'fixed', right: 24, bottom: 24, zIndex: (t) => t.zIndex.speedDial }}
         aria-label="Ask AI assistant"
       >
-        🌿&nbsp;Ask AI
+        <AutoAwesomeOutlined fontSize="small" sx={{ mr: 1 }} />
+        Ask AI
       </Fab>
       <Drawer
         anchor="right"

@@ -1,8 +1,8 @@
 import type { ActivityDefinition, CalculationStatus, OrgUnit, Scope } from '@carbon-glint/sdk';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { FilterBar } from '../common/FilterBar';
 
 export interface EmissionFilterValues {
   scope?: Scope;
@@ -32,10 +32,12 @@ export function EmissionFiltersBar({
 }: EmissionFiltersBarProps) {
   const sel = (v: string | number | undefined) => (v === undefined ? '' : v);
   return (
-    <Stack
-      direction={{ xs: 'column', md: 'row' }}
-      spacing={1.5}
-      sx={{ flexWrap: 'wrap', alignItems: { md: 'center' } }}
+    <FilterBar
+      end={
+        <Button size="small" onClick={onReset}>
+          Reset
+        </Button>
+      }
     >
       <TextField
         select
@@ -43,7 +45,7 @@ export function EmissionFiltersBar({
         label="Scope"
         value={sel(values.scope)}
         onChange={(e) => onChange({ scope: e.target.value ? (Number(e.target.value) as Scope) : undefined })}
-        sx={{ minWidth: 120 }}
+        sx={{ width: 120 }}
       >
         <MenuItem value="">All scopes</MenuItem>
         {[1, 2, 3].map((s) => (
@@ -58,7 +60,7 @@ export function EmissionFiltersBar({
         label="Activity definition"
         value={sel(values.activityDefinitionId)}
         onChange={(e) => onChange({ activityDefinitionId: e.target.value || undefined })}
-        sx={{ minWidth: 200 }}
+        sx={{ width: 190 }}
       >
         <MenuItem value="">All definitions</MenuItem>
         {definitions.map((d) => (
@@ -73,7 +75,7 @@ export function EmissionFiltersBar({
         label="Business unit"
         value={sel(values.orgUnitId)}
         onChange={(e) => onChange({ orgUnitId: e.target.value || undefined })}
-        sx={{ minWidth: 180 }}
+        sx={{ width: 170 }}
       >
         <MenuItem value="">All business units</MenuItem>
         {orgUnits.map((u) => (
@@ -89,7 +91,7 @@ export function EmissionFiltersBar({
           label="Status"
           value={sel(values.status)}
           onChange={(e) => onChange({ status: (e.target.value || undefined) as CalculationStatus | undefined })}
-          sx={{ minWidth: 150 }}
+          sx={{ width: 140 }}
         >
           <MenuItem value="">Any status</MenuItem>
           <MenuItem value="matched">Matched</MenuItem>
@@ -105,6 +107,7 @@ export function EmissionFiltersBar({
         value={sel(values.from)}
         onChange={(e) => onChange({ from: e.target.value || undefined })}
         slotProps={{ inputLabel: { shrink: true } }}
+        sx={{ width: 140 }}
       />
       <TextField
         size="small"
@@ -113,8 +116,8 @@ export function EmissionFiltersBar({
         value={sel(values.to)}
         onChange={(e) => onChange({ to: e.target.value || undefined })}
         slotProps={{ inputLabel: { shrink: true } }}
+        sx={{ width: 140 }}
       />
-      <Button onClick={onReset}>Reset</Button>
-    </Stack>
+    </FilterBar>
   );
 }

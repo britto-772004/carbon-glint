@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Carbon Glint">
+  <defs>
+    <linearGradient id="cg-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#115e59"/>
+    </linearGradient>
+    <linearGradient id="cg-leaf" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#d9f99d"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#cg-bg)"/>
+  <path d="M15 48c0-19 12-31 34-33-1 22-13 34-31 34-1 0-2 0-3-1z" fill="url(#cg-leaf)"/>
+  <path d="M17 47c7-9 15-17 26-25" stroke="#115e59" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M50 6l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fef08a"/>
+</svg>

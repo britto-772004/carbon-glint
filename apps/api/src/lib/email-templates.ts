@@ -7,7 +7,7 @@ const esc = (s: string) =>
 function layout(title: string, bodyHtml: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f6f8f7;font-family:Livvic,Segoe UI,Roboto,Arial,sans-serif;color:#10201c">
 <div style="max-width:560px;margin:0 auto;padding:32px 20px">
-  <div style="font-size:20px;font-weight:700;color:#0f766e;margin-bottom:24px">🌿 Carbon Glint</div>
+  <div style="font-size:20px;font-weight:700;color:#0f766e;margin-bottom:24px">Carbon Glint</div>
   <div style="background:#fff;border:1px solid #dfe7e4;border-radius:12px;padding:28px">
     <h1 style="font-size:20px;margin:0 0 16px">${esc(title)}</h1>
     ${bodyHtml}

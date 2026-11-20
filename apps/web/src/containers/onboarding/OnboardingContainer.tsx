@@ -41,7 +41,7 @@ export function OnboardingContainer() {
         employeeBand: next.employeeBand as Exclude<OnboardingValues['employeeBand'], ''>,
         businessUnitCount: Number(next.businessUnitCount),
         website: next.website,
-        linkedinUrl: next.linkedinUrl,
+        linkedinUrl: next.linkedinUrl.trim() || null,
       },
     });
   };

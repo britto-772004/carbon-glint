@@ -1,3 +1,9 @@
+import AccountTreeOutlined from '@mui/icons-material/AccountTreeOutlined';
+import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
+import GridViewOutlined from '@mui/icons-material/GridViewOutlined';
+import ScienceOutlined from '@mui/icons-material/ScienceOutlined';
+import TimelineOutlined from '@mui/icons-material/TimelineOutlined';
+import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -12,12 +18,36 @@ import { Link as RouterLink } from 'react-router';
 import { BrandMark } from '../common/BrandMark';
 
 const FEATURES = [
-  { icon: '🏢', title: 'Model your organisation', text: 'Branches, plants and campuses as a parent/child tree.' },
-  { icon: '📄', title: 'Upload activity data', text: 'CSV or Excel — AI maps your columns to GHG fields.' },
-  { icon: '🔎', title: 'Public emission factors', text: 'DEFRA, ADEME, EPA, IPCC and national grid factors.' },
-  { icon: '🧭', title: 'Full traceability', text: 'Every tonne links back to its source row and factor.' },
-  { icon: '🗺️', title: 'Drill-down insight', text: 'Heatmaps by scope, category, activity and business unit.' },
-  { icon: '📑', title: 'Country-ready reports', text: 'BRSR, SB 253, AASB S2, SGX, UAE and more as PDF.' },
+  {
+    icon: <AccountTreeOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
+    title: 'Model your organisation',
+    text: 'Branches, plants and campuses as a parent/child tree.',
+  },
+  {
+    icon: <UploadFileOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
+    title: 'Upload activity data',
+    text: 'CSV or Excel — AI maps your columns to GHG fields.',
+  },
+  {
+    icon: <ScienceOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
+    title: 'Public emission factors',
+    text: 'DEFRA, ADEME, EPA, IPCC and national grid factors.',
+  },
+  {
+    icon: <TimelineOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
+    title: 'Full traceability',
+    text: 'Every tonne links back to its source row and factor.',
+  },
+  {
+    icon: <GridViewOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
+    title: 'Drill-down insight',
+    text: 'Heatmaps by scope, category, activity and business unit.',
+  },
+  {
+    icon: <DescriptionOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
+    title: 'Country-ready reports',
+    text: 'BRSR, SB 253, AASB S2, SGX, UAE and more as PDF.',
+  },
 ];
 
 export interface LandingPageProps {
@@ -77,9 +107,7 @@ export function LandingPage({ isSignedIn, appPath }: LandingPageProps) {
             <Grid key={f.title} size={{ xs: 12, sm: 6, md: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
-                  <Typography sx={{ fontSize: 28 }} aria-hidden>
-                    {f.icon}
-                  </Typography>
+                  <Box aria-hidden>{f.icon}</Box>
                   <Typography variant="h6" sx={{ mt: 1 }}>
                     {f.title}
                   </Typography>

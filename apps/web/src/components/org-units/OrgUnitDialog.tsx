@@ -1,3 +1,4 @@
+import { OrgUnitTypeIcon } from './OrgUnitTypeIcon';
 import type { FormEvent } from 'react';
 import type { OrgUnit, OrgUnitType } from '@carbon-glint/sdk';
 import Alert from '@mui/material/Alert';
@@ -112,7 +113,12 @@ export function OrgUnitDialog({
               >
                 {ORG_UNIT_TYPES.filter((t) => isHq || t.value !== 'hq').map((t) => (
                   <MenuItem key={t.value} value={t.value}>
-                    {t.icon} {t.label}
+                    <OrgUnitTypeIcon
+                      type={t.value}
+                      fontSize="small"
+                      sx={{ mr: 1, verticalAlign: 'middle', color: 'text.secondary' }}
+                    />
+                    {t.label}
                   </MenuItem>
                 ))}
               </TextField>

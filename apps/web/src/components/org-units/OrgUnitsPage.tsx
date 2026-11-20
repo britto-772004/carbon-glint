@@ -68,7 +68,7 @@ export function OrgUnitsPage(props: OrgUnitsPageProps) {
             <ToggleButton value="chart">Chart</ToggleButton>
             <ToggleButton value="table">Table</ToggleButton>
           </ToggleButtonGroup>
-          <Button variant="contained" onClick={props.onAddRoot}>
+          <Button variant="contained" onClick={props.onAddRoot} data-tour="org-add">
             Add unit
           </Button>
         </Stack>

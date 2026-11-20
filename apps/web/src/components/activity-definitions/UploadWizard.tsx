@@ -1,3 +1,6 @@
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import TuneRounded from '@mui/icons-material/TuneRounded';
+import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
 import type { ChangeEvent } from 'react';
 import type { ColumnMapping, DataSource, MappingSuggestion } from '@carbon-glint/sdk';
 import Alert from '@mui/material/Alert';
@@ -95,9 +98,7 @@ function UploadStep({ onFile, isUploading, uploadError }: UploadWizardProps) {
           }}
         >
           <Stack spacing={2} sx={{ alignItems: 'center' }}>
-            <Typography sx={{ fontSize: 40 }} aria-hidden>
-              📄
-            </Typography>
+            <UploadFileOutlined sx={{ fontSize: 48, color: 'primary.main' }} aria-hidden />
             <Typography>Upload a CSV or Excel (.xlsx) file, up to 20 MB.</Typography>
             <Button component="label" variant="contained" loading={isUploading}>
               Choose file
@@ -204,13 +205,13 @@ function MappingStep(p: UploadWizardProps) {
           {[
             {
               mode: 'ai' as const,
-              icon: '✨',
+              icon: <AutoAwesomeOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
               title: 'Automatically infer (AI)',
               text: 'Gemini reads your headers and sample rows and proposes a mapping you can review.',
             },
             {
               mode: 'manual' as const,
-              icon: '🧩',
+              icon: <TuneRounded sx={{ fontSize: 30, color: 'primary.main' }} />,
               title: 'Map manually',
               text: 'Pick the column for each field yourself.',
             },
@@ -219,9 +220,9 @@ function MappingStep(p: UploadWizardProps) {
               <Card>
                 <CardActionArea onClick={() => p.onChooseMode(o.mode)} sx={{ height: '100%' }}>
                   <CardContent>
-                    <Typography sx={{ fontSize: 28 }} aria-hidden>
+                    <Box aria-hidden sx={{ mb: 1 }}>
                       {o.icon}
-                    </Typography>
+                    </Box>
                     <Typography variant="h6">{o.title}</Typography>
                     <Typography color="text.secondary">{o.text}</Typography>
                   </CardContent>

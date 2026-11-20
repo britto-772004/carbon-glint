@@ -1,3 +1,11 @@
+import CalculateOutlined from '@mui/icons-material/CalculateOutlined';
+import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
+import EditNoteOutlined from '@mui/icons-material/EditNoteOutlined';
+import LabelOutlined from '@mui/icons-material/LabelOutlined';
+import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
+import SearchRounded from '@mui/icons-material/SearchRounded';
+import SwapHorizRounded from '@mui/icons-material/SwapHorizRounded';
+import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
 import type { ReactNode } from 'react';
 import type { EmissionTrace } from '@carbon-glint/sdk';
 import Alert from '@mui/material/Alert';
@@ -59,7 +67,7 @@ interface TraceShape {
   override?: { type: string; reason: string; at: string; previousCo2eKg: number | null };
 }
 
-function Node({ icon, title, children }: { icon: string; title: string; children: ReactNode }) {
+function Node({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
     <Box
       sx={{
@@ -156,7 +164,7 @@ export function TraceDrawer({
           </Stack>
 
           {t.input && (
-            <Node icon="📄" title={`Input — row ${t.input.rowNumber}`}>
+            <Node icon={<DescriptionOutlined sx={{ fontSize: 15 }} />} title={`Input — row ${t.input.rowNumber}`}>
               {t.input.description} ·{' '}
               <b>
                 {t.input.measure.toLocaleString()} {t.input.unit}
@@ -167,13 +175,13 @@ export function TraceDrawer({
             </Node>
           )}
           {t.classification && (
-            <Node icon="🏷️" title="Classification">
+            <Node icon={<LabelOutlined sx={{ fontSize: 15 }} />} title="Classification">
               Scope {t.classification.scope} · {t.classification.categoryName} · {row.activityDefinitionName}
             </Node>
           )}
           {t.match && !t.override && (
             <Node
-              icon="🔎"
+              icon={<SearchRounded sx={{ fontSize: 15 }} />}
               title={`Factor match — ${t.match.method === 'ai' ? 'AI (Gemini)' : t.match.method === 'search' ? 'full-text search' : 'none'}`}
             >
               Confidence {Math.round((t.match.confidence ?? 0) * 100)}% — {t.match.rationale}
@@ -189,19 +197,22 @@ export function TraceDrawer({
             </Node>
           )}
           {t.override && (
-            <Node icon="✋" title={`Manual override — ${t.override.type.replace('_', ' ')}`}>
+            <Node
+              icon={<EditNoteOutlined sx={{ fontSize: 15 }} />}
+              title={`Manual override — ${t.override.type.replace('_', ' ')}`}
+            >
               “{t.override.reason}” · {new Date(t.override.at).toLocaleString()}
               {t.override.previousCo2eKg !== null && <> · was {formatCo2e(t.override.previousCo2eKg)}</>}
             </Node>
           )}
           {t.conversion && (
-            <Node icon="⇄" title="Unit conversion">
+            <Node icon={<SwapHorizRounded sx={{ fontSize: 15 }} />} title="Unit conversion">
               {t.conversion.from} → {t.conversion.to} (× {t.conversion.factor}) ={' '}
               {t.conversion.normalizedQuantity.toLocaleString()} {t.conversion.to}
             </Node>
           )}
           {t.factor && (
-            <Node icon="📚" title="Emission factor">
+            <Node icon={<MenuBookOutlined sx={{ fontSize: 15 }} />} title="Emission factor">
               <b>
                 {t.factor.co2ePerUnit} kg CO₂e / {t.factor.unit}
               </b>{' '}
@@ -224,12 +235,12 @@ export function TraceDrawer({
             </Node>
           )}
           {t.gwp && (
-            <Node icon="🌡️" title="GWP basis">
+            <Node icon={<ThermostatOutlined sx={{ fontSize: 15 }} />} title="GWP basis">
               {t.gwp}
             </Node>
           )}
           {t.result && (
-            <Node icon="=" title={`Result — ${formatCo2e(t.result.co2eKg)}`}>
+            <Node icon={<CalculateOutlined sx={{ fontSize: 15 }} />} title={`Result — ${formatCo2e(t.result.co2eKg)}`}>
               <Box component="code" sx={{ fontSize: 12 }}>
                 {t.result.formula}
               </Box>

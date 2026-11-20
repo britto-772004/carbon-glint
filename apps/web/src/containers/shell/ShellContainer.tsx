@@ -1,11 +1,10 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { changePasswordMutation, getMeQueryKey, logOutMutation, type Me } from '@carbon-glint/sdk';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { AppShell } from '../../components/shell/AppShell';
 import { PLATFORM_TABS, TENANT_TABS } from './tabs';
-
-/** The assistant (ECharts + markdown) loads after the shell renders. */
+import { TourContainer } from '../tour/TourContainer';
 import { toErrorMessage } from '../../lib/errors';
 import { useMe } from '../session/useMe';
 
@@ -22,6 +21,9 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
   const { pathname } = useLocation();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [tourMenuOpen, setTourMenuOpen] = useState(false);
+  const onTourMenu = useCallback((open: boolean) => setTourMenuOpen(open), []);
 
   const logOut = useMutation({
     ...logOutMutation(),
@@ -48,6 +50,9 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
       userEmail={me?.user.email ?? ''}
       tabs={tabs}
       activePath={active?.path ?? false}
+      mobileNavOpen={mobileNavOpen}
+      onToggleMobileNav={() => setMobileNavOpen((o) => !o)}
+      onStartTour={variant === 'tenant' ? () => setTourMenuOpen(true) : undefined}
       menuAnchor={menuAnchor}
       onOpenMenu={setMenuAnchor}
       onCloseMenu={() => setMenuAnchor(null)}
@@ -59,10 +64,19 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
       }}
       showTemporaryPasswordBanner={Boolean(me?.user.passwordIsTemporary)}
       floating={
-        variant === 'tenant' && !pathname.startsWith('/app/assistant') ? (
-          <Suspense fallback={null}>
-            <AssistantLauncherContainer />
-          </Suspense>
+        variant === 'tenant' ? (
+          <>
+            {!pathname.startsWith('/app/assistant') && (
+              <Suspense fallback={null}>
+                <AssistantLauncherContainer />
+              </Suspense>
+            )}
+            <TourContainer
+              menuOpen={tourMenuOpen}
+              onMenuOpenChange={onTourMenu}
+              industryCode={me?.tenant?.industry?.code}
+            />
+          </>
         ) : undefined
       }
       changePassword={{

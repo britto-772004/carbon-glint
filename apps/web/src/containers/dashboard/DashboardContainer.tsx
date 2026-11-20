@@ -138,6 +138,7 @@ export function DashboardContainer() {
           onBucket={setBucket}
           showTable={showTable}
           onToggleTable={() => setShowTable(!showTable)}
+          fill
         />
       }
       trend={<ScopeTrendChart data={trend.data} isLoading={trend.isPending} />}
@@ -148,6 +149,7 @@ export function DashboardContainer() {
           edges={edges}
           isLoading={tree.isPending}
           selectedName={tree.data?.find((n) => n.orgUnitId === filters.orgUnitId)?.name}
+          fill
         />
       }
       drawer={

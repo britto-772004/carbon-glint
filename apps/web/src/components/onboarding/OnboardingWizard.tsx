@@ -134,13 +134,11 @@ export function OnboardingWizard({
                 />
                 <TextField
                   name="linkedinUrl"
-                  label="LinkedIn company page"
-                  type="url"
-                  required
-                  placeholder="https://www.linkedin.com/company/your-company"
+                  label="LinkedIn (optional)"
+                  placeholder="linkedin.com/company/your-company or linkedin.com/in/your-name"
                   defaultValue={values.linkedinUrl}
-                  slotProps={{ htmlInput: { pattern: '^https://([a-z]{2,3}\\.)?linkedin\\.com/company/[^/]+/?.*$' } }}
-                  helperText="Must be a linkedin.com/company/… URL"
+                  slotProps={{ htmlInput: { maxLength: 300 } }}
+                  helperText="Company page or your own profile. Leave blank to skip."
                 />
               </>
             )}
