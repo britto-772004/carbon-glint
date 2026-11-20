@@ -1,16 +1,16 @@
 import type { RequestHandler } from 'express';
 import type * as OpenApiValidator from 'express-openapi-validator';
-import type { OperationHandlers } from './types.js';
+import type { Controllers } from './types.js';
 
 type ValidatorOptions = Parameters<typeof OpenApiValidator.middleware>[0];
 type OperationHandlerOptions = Exclude<ValidatorOptions['operationHandlers'], string | false | undefined>;
 type Resolver = OperationHandlerOptions['resolver'];
 
 /**
- * Resolves each route declared in openapi.yaml to a handler via its `operationId`.
+ * Resolves each route declared in openapi.yaml to a controller via its `operationId`.
  * Routes exist only because the spec declares them — there is no hand-written router.
  */
-export function operationIdResolver(handlers: OperationHandlers): Resolver {
+export function operationIdResolver(controllers: Controllers): Resolver {
   return (_handlersPath, route, apiDoc) => {
     // openApiRoute includes the server base path (e.g. /api); spec paths do not.
     const pathKey = route.openApiRoute.substring(route.basePath.length);
@@ -20,9 +20,9 @@ export function operationIdResolver(handlers: OperationHandlers): Resolver {
     if (!operationId) {
       throw new Error(`No operationId for ${route.method} ${route.openApiRoute} in openapi.yaml`);
     }
-    const handler = (handlers as unknown as Record<string, RequestHandler | undefined>)[operationId];
+    const handler = (controllers as unknown as Record<string, RequestHandler | undefined>)[operationId];
     if (!handler) {
-      throw new Error(`No handler registered for operationId "${operationId}"`);
+      throw new Error(`No controller registered for operationId "${operationId}"`);
     }
     return handler;
   };

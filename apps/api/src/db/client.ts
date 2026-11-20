@@ -1,13 +1,11 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { sql } from 'drizzle-orm';
 import pg from 'pg';
-import * as schema from './schema.js';
+import * as models from '../models/index.js';
 
-export type Database = NodePgDatabase<typeof schema>;
+export type Database = NodePgDatabase<typeof models>;
 
 export interface DatabaseHandle {
   db: Database;
-  ping(): Promise<boolean>;
   close(): Promise<void>;
 }
 
@@ -19,18 +17,5 @@ export function createDatabase(connectionString: string): DatabaseHandle {
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
   });
-  const db = drizzle(pool, { schema });
-
-  return {
-    db,
-    async ping() {
-      try {
-        await db.execute(sql`select 1`);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    close: () => pool.end(),
-  };
+  return { db: drizzle(pool, { schema: models }), close: () => pool.end() };
 }

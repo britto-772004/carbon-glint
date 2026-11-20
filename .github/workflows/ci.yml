@@ -32,6 +32,33 @@ jobs:
       - run: pnpm test
       - run: pnpm -r run build
 
+  api-integration:
+    name: API integration tests (Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: carbon
+          POSTGRES_PASSWORD: carbon
+          POSTGRES_DB: carbon_glint_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U carbon -d carbon_glint_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://carbon:carbon@localhost:5432/carbon_glint_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm generate
+      - run: pnpm test:integration
+
   api-image:
     name: API Docker image builds
     runs-on: ubuntu-latest

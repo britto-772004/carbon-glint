@@ -18,7 +18,8 @@
     "db:up": "docker compose up -d postgres",
     "db:generate": "pnpm --filter @carbon-glint/api run db:generate",
     "db:migrate": "pnpm --filter @carbon-glint/api run db:migrate",
-    "deploy:web": "firebase deploy --only hosting --non-interactive"
+    "deploy:web": "firebase deploy --only hosting --non-interactive",
+    "test:integration": "pnpm --filter @carbon-glint/api run test:integration"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
