@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { configureSdk } from '@carbon-glint/sdk';
@@ -25,6 +25,9 @@ globalThis.DOMMatrixReadOnly ??= class {
   m22 = 1;
   constructor() {}
 } as unknown as typeof DOMMatrixReadOnly;
+
+// Async UI can be slow when the API and web suites run in parallel (CI / pnpm -r).
+configure({ asyncUtilTimeout: 5000 });
 
 // The real generated SDK runs in tests; MSW intercepts at the network layer.
 configureSdk({ baseUrl: TEST_API_BASE_URL });
