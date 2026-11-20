@@ -28,6 +28,16 @@ unit, match activities to public emission factors with full traceability, and ex
 > Reports follow the published framework structures but are **not assured**. Have them reviewed by an ESG / compliance
 > professional before filing.
 
+## Run it locally (one command)
+
+```bash
+docker compose -f compose.local.yaml up -d --build
+```
+
+Open http://localhost:8080. Emails (verification links, invites) appear at http://localhost:8025. The super admin is
+`admin@carbonglint.local` / `LocalAdmin123`. Add `GEMINI_API_KEY=… ` in front of the command to enable the AI features.
+Stop it with `docker compose -f compose.local.yaml down` (add `-v` to wipe the data).
+
 ## Run it anywhere (Docker)
 
 Public images: `ghcr.io/britto-772004/carbon-glint-api` and `ghcr.io/britto-772004/carbon-glint-web` (amd64 and arm64).

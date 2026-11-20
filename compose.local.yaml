@@ -1,0 +1,110 @@
+# Carbon Glint — run everything locally with ONE command (builds from source, no .env needed):
+#
+#   docker compose -f compose.local.yaml up -d --build
+#
+#   App:            http://localhost:8080
+#   Emails (inbox): http://localhost:8025   (verification links, invites, new passwords)
+#   Super admin:    admin@carbonglint.local / LocalAdmin123
+#
+#   Stop:           docker compose -f compose.local.yaml down        (add -v to also delete the data)
+#
+# Optional AI features: GEMINI_API_KEY=your-key docker compose -f compose.local.yaml up -d
+# Local use only — the secrets below are placeholders. For a server, use deploy/docker/compose.yaml with a real .env.
+name: carbon-glint-local
+
+x-api: &api
+  image: carbon-glint-api:local
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+  environment:
+    NODE_ENV: production
+    APP_URL: http://localhost:8080
+    DATABASE_URL: postgres://carbon:carbon@postgres:5432/carbon_glint
+    REDIS_URL: redis://redis:6379
+    SESSION_SECRET: local-only-session-secret-do-not-use-in-production-0123456789
+    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+    SMTP_HOST: mailpit
+    SMTP_PORT: '1025'
+    MAIL_FROM: Carbon Glint <no-reply@carbonglint.local>
+    SUPERADMIN_EMAIL: admin@carbonglint.local
+    SUPERADMIN_PASSWORD: LocalAdmin123
+    DEFRA_YEAR: '2026'
+  volumes:
+    - files:/data
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg18-bookworm
+    environment:
+      POSTGRES_USER: carbon
+      POSTGRES_PASSWORD: carbon
+      POSTGRES_DB: carbon_glint
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U carbon -d carbon_glint']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.6-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.34
+    ports:
+      - '8025:8025'
+    restart: unless-stopped
+
+  # One-shot: database migrations, DEFRA emission factors (downloaded from GOV.UK once), super admin.
+  setup:
+    <<: *api
+    command: ['node', 'dist/setup.js']
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: 'no'
+
+  api:
+    <<: *api
+    depends_on:
+      setup: { condition: service_completed_successfully }
+
+  worker:
+    <<: *api
+    command: ['node', '--enable-source-maps', 'dist/worker.js']
+    healthcheck:
+      disable: true
+    depends_on:
+      setup: { condition: service_completed_successfully }
+
+  web:
+    image: carbon-glint-web:local
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - '8080:80'
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  files:
