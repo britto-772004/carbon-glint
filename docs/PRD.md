@@ -513,3 +513,20 @@ Still open:
 
 Reduction targets (SBTi-style), initiatives with costs and expected tCO₂e savings, marginal abatement cost curves,
 scenario modelling, supplier engagement, market-based Scope 2 (RECs/PPAs), and assurance workflows.
+
+## 18. Implementation status (2026-11-20)
+
+All eight phases are implemented and tested (unit, HTTP, Postgres/Redis integration, React and app-flow tests) and verified
+end to end on the containerised stack: sign-up → verify → onboard → org units → upload → import → publish → DEFRA-matched CO₂e →
+heatmap → BRSR PDF → super-admin console.
+
+| Area             | Status / deviation from this PRD                                                                                                                                                                                                                                                 |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tenant isolation | Enforced in every repository query and tested at HTTP and SQL level. **Postgres RLS is not yet enabled** (planned defence in depth).                                                                                                                                             |
+| Org chart        | Auto-layout (dagre) with drag-to-re-parent. Node positions are **not persisted** (the layout is recomputed).                                                                                                                                                                     |
+| EF library       | **DEFRA/DESNZ flat-file importer, verified on the real 2026 file** (2,622 factors). Other sources (ADEME, EPA, CEA, NGA, EMA) load through the **generic CSV importer**; dedicated parsers are not yet written. IPCC EFDB terms are unverified. ecoinvent is excluded (licence). |
+| Matching         | Full-text + trigram search with domain re-ranking, then Gemini chooses among candidates. Without Gemini every match is "needs review". GWP basis is "as published by the source".                                                                                                |
+| Lasagne chart    | Heatmap (lasagna plot) as decided; months are pro-rated by days.                                                                                                                                                                                                                 |
+| Reports          | PDFs are rendered with **react-pdf** (no headless Chromium, so it fits the 1 GB VM). Seven formats. The NIRF template is still pending confirmation. Not assured.                                                                                                                |
+| AI assistant     | RAG (pgvector) + tenant-scoped tools + validated chart specs + saved conversations. Answers are **request/response, not streamed**.                                                                                                                                              |
+| Deployment       | GCP e2-micro + pm2 (Terraform, CI/CD over SSH) **and** open-source Docker images (GHCR) with a self-host compose stack.                                                                                                                                                          |

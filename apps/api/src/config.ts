@@ -7,6 +7,8 @@ const optional = <T extends z.ZodType>(schema: T) =>
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8080),
+  /** Bind address: localhost on the VM (behind Caddy); 0.0.0.0 inside containers. */
+  HOST: optional(z.string().min(1).default('127.0.0.1')),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Postgres connection string (local docker in dev, native Postgres on the VM in production). */
   DATABASE_URL: z.url(),

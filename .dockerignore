@@ -4,7 +4,9 @@
 **/.env
 **/.env.*
 !**/.env.example
+**/.data
 .git
 .github
-apps/web
+apps/infra
+docs
 coverage

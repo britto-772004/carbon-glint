@@ -8,8 +8,8 @@ const logger = createLogger(config);
 const runtime = createRuntime(config, logger);
 const app = createApp({ config, logger, services: runtime.services });
 
-const server = app.listen(config.PORT, '127.0.0.1', () => {
-  logger.info({ port: config.PORT, env: config.NODE_ENV }, 'API listening');
+const server = app.listen(config.PORT, config.HOST, () => {
+  logger.info({ host: config.HOST, port: config.PORT, env: config.NODE_ENV }, 'API listening');
 });
 
 const shutdown = (signal: string) => {

@@ -23,5 +23,6 @@
     "@redocly/cli": "^2.82.0",
     "openapi-typescript": "^7.13.0",
     "typescript": "^6.0.3"
-  }
+  },
+  "license": "Apache-2.0"
 }
