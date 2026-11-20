@@ -34,6 +34,8 @@ tags:
     description: GHG taxonomy, Activity Definitions, data sources and activity rows
   - name: emissions
     description: Emission factor library, calculated emissions, traceability, overrides and aggregations
+  - name: reports
+    description: Country-format ESG reports (PDF)
 # Default: public. Protected operations declare `security` explicitly.
 # cookieAuth "scopes" are roles: [] = any signed-in user, [admin] = tenant admin, [superadmin] = platform operator.
 security: []
@@ -1322,6 +1324,123 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /reports/formats:
+    get:
+      operationId: listReportFormats
+      tags: [reports]
+      summary: Available country / framework report formats
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Formats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReportFormat'
+        default:
+          $ref: '#/components/responses/Error'
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: Generated reports (newest first)
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createReport
+      tags: [reports]
+      summary: Generate a PDF report for a business unit (background job)
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReportRequest'
+      responses:
+        '202':
+          description: Queued — poll getReport
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /reports/{reportId}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Report status
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: deleteReport
+      tags: [reports]
+      summary: Delete a report and its PDF
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /reports/{reportId}/download:
+    get:
+      operationId: downloadReport
+      tags: [reports]
+      summary: Download the PDF
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     cookieAuth:
@@ -1330,6 +1449,13 @@ components:
       name: cg_session
       description: httpOnly session cookie set by logIn / verifyEmail / acceptInvitation.
   parameters:
+    ReportId:
+      name: reportId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     ActivityId:
       name: activityId
       in: path
@@ -1445,6 +1571,71 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    ReportFormat:
+      type: object
+      additionalProperties: false
+      required: [code, name, region, framework, description]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        framework:
+          type: string
+        description:
+          type: string
+    ReportStatus:
+      type: string
+      enum: [queued, generating, ready, failed]
+    Report:
+      type: object
+      additionalProperties: false
+      required: [id, orgUnitId, orgUnitName, format, formatName, periodStart, periodEnd, status, error, createdAt, generatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgUnitId:
+          type: string
+          format: uuid
+        orgUnitName:
+          type: string
+        format:
+          type: string
+        formatName:
+          type: string
+        periodStart:
+          $ref: '#/components/schemas/IsoDate'
+        periodEnd:
+          $ref: '#/components/schemas/IsoDate'
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        error:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        generatedAt:
+          type: [string, 'null']
+          format: date-time
+    CreateReportRequest:
+      type: object
+      additionalProperties: false
+      required: [orgUnitId, format, periodStart, periodEnd]
+      properties:
+        orgUnitId:
+          type: string
+          format: uuid
+        format:
+          type: string
+          minLength: 1
+          maxLength: 40
+        periodStart:
+          $ref: '#/components/schemas/IsoDate'
+        periodEnd:
+          $ref: '#/components/schemas/IsoDate'
     CalculationStatus:
       type: string
       enum: [matched, needs_review, unmatched, overridden]
