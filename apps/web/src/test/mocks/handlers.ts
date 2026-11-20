@@ -1,7 +1,25 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiError, GetHealthResponse, Industry, Invitation, Me, OrgUnit, User } from '@carbon-glint/sdk';
+import type {
+  ActivityDefinition,
+  ApiError,
+  GetHealthResponse,
+  GhgCategory,
+  Industry,
+  Invitation,
+  Me,
+  OrgUnit,
+  User,
+} from '@carbon-glint/sdk';
 import { apiUrl } from '../constants';
-import { INDUSTRIES, ORG_UNITS, buildHealth, buildInvitation, buildUser } from '../fixtures';
+import {
+  CATEGORIES,
+  INDUSTRIES,
+  ORG_UNITS,
+  buildActivityDefinition,
+  buildHealth,
+  buildInvitation,
+  buildUser,
+} from '../fixtures';
 import { session } from './session';
 
 /** Spec-shaped error response helper for overriding handlers in tests. */
@@ -26,4 +44,19 @@ export const handlers = [
   http.get(apiUrl('/users'), () => HttpResponse.json<User[]>([buildUser()])),
   http.get(apiUrl('/invitations'), () => HttpResponse.json<Invitation[]>([buildInvitation()])),
   http.get(apiUrl('/org-units'), () => HttpResponse.json<OrgUnit[]>(ORG_UNITS)),
+  http.get(apiUrl('/ghg-categories'), () => HttpResponse.json<GhgCategory[]>(CATEGORIES)),
+  http.get(apiUrl('/activity-definitions'), ({ request }) => {
+    const scope = new URL(request.url).searchParams.get('scope');
+    const all = [
+      buildActivityDefinition(),
+      buildActivityDefinition({
+        id: 'ad000000-0000-4000-8000-000000000002',
+        name: 'Flights',
+        scope: 3,
+        status: 'published',
+        activityCount: 1200,
+      }),
+    ];
+    return HttpResponse.json<ActivityDefinition[]>(scope ? all.filter((d) => String(d.scope) === scope) : all);
+  }),
 ];

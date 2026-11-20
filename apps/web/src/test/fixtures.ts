@@ -1,4 +1,15 @@
-import type { Health, Industry, Invitation, Me, OrgUnit, Tenant, TenantSummary, User } from '@carbon-glint/sdk';
+import type {
+  ActivityDefinition,
+  GhgCategory,
+  Health,
+  Industry,
+  Invitation,
+  Me,
+  OrgUnit,
+  Tenant,
+  TenantSummary,
+  User,
+} from '@carbon-glint/sdk';
 
 /**
  * Fixture builders typed with SDK types — if the spec changes, fixtures fail to compile.
@@ -110,3 +121,63 @@ export const ORG_UNITS: OrgUnit[] = [
     city: 'Dubai',
   }),
 ];
+
+export const CATEGORIES: GhgCategory[] = [
+  {
+    id: 'c1000000-0000-4000-8000-000000000001',
+    scope: 1,
+    code: 'S1_STATIONARY',
+    name: 'Stationary combustion',
+    description: '',
+    custom: false,
+    recommended: false,
+    rank: null,
+  },
+  {
+    id: 'c2000000-0000-4000-8000-000000000001',
+    scope: 2,
+    code: 'S2_ELECTRICITY',
+    name: 'Purchased electricity',
+    description: '',
+    custom: false,
+    recommended: true,
+    rank: 0,
+  },
+  {
+    id: 'c2000000-0000-4000-8000-000000000002',
+    scope: 2,
+    code: 'S2_COOLING',
+    name: 'Purchased cooling',
+    description: '',
+    custom: false,
+    recommended: false,
+    rank: null,
+  },
+  {
+    id: 'c3000000-0000-4000-8000-000000000006',
+    scope: 3,
+    code: 'S3_C6',
+    name: '6. Business travel',
+    description: '',
+    custom: false,
+    recommended: true,
+    rank: 1,
+  },
+];
+
+export const buildActivityDefinition = (overrides: Partial<ActivityDefinition> = {}): ActivityDefinition => ({
+  id: 'ad000000-0000-4000-8000-000000000001',
+  name: 'Grid electricity',
+  description: 'All sites',
+  scope: 2,
+  category: { id: CATEGORIES[1]!.id, code: 'S2_ELECTRICITY', name: 'Purchased electricity', scope: 2 },
+  defaultOrgUnitId: null,
+  periodStart: '2026-01-01',
+  periodEnd: '2026-12-31',
+  status: 'draft',
+  publishedAt: null,
+  dataSourceCount: 0,
+  activityCount: 0,
+  createdAt: '2026-11-20T10:00:00.000Z',
+  ...overrides,
+});
