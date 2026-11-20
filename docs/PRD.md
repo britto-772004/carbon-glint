@@ -6,7 +6,7 @@
 | **v1 scope** | Measure carbon emissions (Scopes 1–3) across industries; export country-specific ESG reports |
 | **Later**    | Abatement: reduction targets, initiatives, scenario modelling                                |
 | **Status**   | Draft v0.1, 2026-11-20                                                                       |
-| **Delivery** | Phased (§12). One phase at a time, each shippable and tested                                 |
+| **Delivery** | Phased (§13). One phase at a time, each shippable and tested                                 |
 
 ---
 
@@ -29,6 +29,7 @@ look-ups and is hard to trace.
    **drill-down (lasagne) views** and a **BU tree**.
 6. Users can export a polished **PDF ESG report** for a business unit in a country format (US, Middle East,
    Australia, Singapore, India, and Indian colleges / NIRF).
+7. Users can ask an **AI assistant** questions about their company's emissions and get grounded answers, including charts.
 
 **Non-goals (v1)**: abatement planning, supplier portals, SSO/SAML, a billing system, a mobile app,
 a self-serve password reset flow (see §5.4), market-based Scope 2 (location-based only in v1).
@@ -58,38 +59,43 @@ a self-serve password reset flow (see §5.4), market-based Scope 2 (location-bas
   `SUPERADMIN_PASSWORD` when no flags are given). Super Admin emails are exempt from the work-email rule.
 - Super Admin signs in on the same page and lands on **/platform** (the tenant console), not a tenant dashboard.
 
-## 4. Platform and architecture changes
+## 4. Platform and architecture
 
-**Decision: all services on a single VM for now.** This fully replaces the current Cloud Run + Neon +
-Firebase Hosting setup, which will be removed from the repo. The infrastructure is defined in **Terraform** in `apps/infra`.
+**Decision (2026-11-20): Google Cloud only, one `e2-micro` VM, no containers.** This fully replaces the earlier Cloud Run + Neon +
+Firebase Hosting setup. Terraform lives in `apps/infra/terraform`. The only GCP resources are **the VM, its disk and IP, a firewall rule, a
+service account, and one Cloud Storage bucket for backups**. Nothing else is provisioned.
 
 ```
-               ┌──────────────────────── single VM (docker compose) ────────────────────────┐
- browser ──TLS──▶ Caddy ─┬─ /        → web (static React build)                             │
-               │         └─ /api/**  → api  (Express, OpenAPI-driven)                       │
-               │                        │        ▲                                          │
-               │                        ▼        │ jobs                                     │
-               │   postgres 17 (+pg_trgm, FTS)   redis 7 ◀── worker (BullMQ: imports,       │
-               │   uploads/ + reports/ volume          sessions, EF matching, PDF, email)   │
-               └────────────────────────────────────────────────────────────────────────────┘
-                     SMTP relay (587)  ·  Gemini API  ·  nightly pg_dump → Cloud Storage
+                 Cloudflare Tunnel (HTTPS, no open web ports, no domain needed)
+                                   │
+ ┌─────────────────────────────── e2-micro VM (Debian 12, 1 GB RAM + 2 GB swap) ───────────────────────────────┐
+ │  cloudflared ──▶ Caddy :80 ─┬─ /        → /opt/carbon-glint/current/web   (static React build)               │
+ │                             └─ /api/**  → 127.0.0.1:8080  api     ┐                                         │
+ │                                                                   ├─ pm2 (Node 24)                          │
+ │                                           worker (BullMQ jobs)    ┘                                         │
+ │  PostgreSQL 18 (+pg_trgm, unaccent, pgvector)   ·   Redis 8 (localhost)   ·   /opt/carbon-glint/shared/files   │
+ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+        nightly pg_dump → Cloud Storage bucket  ·  SMTP relay (587)  ·  Gemini API
 ```
 
-| Concern         | Decision                                                                                                                                                                                                                                                                                                            |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hosting         | One GCE VM (e.g. `e2-standard-4`, 100 GB SSD) running `docker compose`: `caddy`, `api`, `worker`, `postgres`, `redis`.                                                                                                                                                                                              |
-| Web             | Built static files served by Caddy (Firebase Hosting no longer needed).                                                                                                                                                                                                                                             |
-| Database        | Postgres 17 in a container on the VM, with a persistent volume, `pg_trgm` and `unaccent`. **Nightly `pg_dump` to Cloud Storage is mandatory.**                                                                                                                                                                      |
-| Redis           | Sessions, rate limiting, BullMQ job queues, and the AI response cache.                                                                                                                                                                                                                                              |
-| Background work | A new `apps/worker` (same codebase, same layers) for file imports, EF matching and calculation, PDF rendering and email.                                                                                                                                                                                            |
-| Email           | `nodemailer` over SMTP. **Port 25 outbound is blocked on GCP, and mail sent straight from a VM lands in spam.** Use an SMTP relay on 587 (Brevo / SendGrid / Amazon SES / Google Workspace relay). The app only needs `SMTP_HOST/PORT/USER/PASS`, so the provider can be swapped. Dev uses a **Mailpit** container. |
-| Files           | Uploads and generated PDFs stored on a VM volume under `/data`, behind a `FileStorage` interface so Cloud Storage can be swapped in later.                                                                                                                                                                          |
-| Infrastructure  | **Terraform** (`apps/infra`): VPC and firewall (80/443 only, SSH through IAP), static IP, VM with a persistent data disk and startup script (Docker install), Artifact Registry, GCS backup bucket with lifecycle rules, service accounts, and Workload Identity Federation for GitHub. Remote state in GCS.        |
-| CI/CD           | GitHub Actions: CI → build `api`/`worker`/`web` images → push to Artifact Registry → SSH (via IAP) to the VM → `docker compose pull && up -d` → run migrations → smoke test `/api/health`. `terraform plan` runs on PRs that touch `apps/infra`.                                                                    |
-| Charts          | Apache ECharts (drill-down, stacked bars, treemap, sunburst) inside MUI components.                                                                                                                                                                                                                                 |
-| Org chart       | React Flow (`@xyflow/react`) with automatic tree layout (`dagre`/`elkjs`).                                                                                                                                                                                                                                          |
-| PDF             | HTML/React templates rendered by headless Chromium (Playwright) in the worker. Charts as SVG.                                                                                                                                                                                                                       |
-| Spreadsheets    | `exceljs` (XLSX read/write, sample template) and `papaparse` (CSV).                                                                                                                                                                                                                                                 |
+| Concern         | Decision                                                                                                                                                                                                                                                                                                                                      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VM              | One **`e2-micro`** (2 shared vCPU, 1 GB RAM) in a free-tier region (`us-central1` by default), with a **30 GB standard persistent disk** (free-tier eligible) and a static external IP. A bootstrap script adds 2 GB of swap and installs everything natively.                                                                                |
+| Processes       | **pm2** runs `api` and `worker` (systemd startup, log rotation, memory-limit restarts). Postgres, Redis, Caddy and cloudflared are native systemd services. **No Docker on the VM.**                                                                                                                                                          |
+| Web             | The static Vite build is served by Caddy from the current release, and `/api/**` is reverse-proxied to the API. Same origin, so no CORS.                                                                                                                                                                                                      |
+| HTTPS           | **Cloudflare Tunnel** (`cloudflared`). Without a domain it uses a _quick tunnel_ (a random `https://*.trycloudflare.com` URL, which changes when the tunnel restarts). With a domain on Cloudflare, set `CLOUDFLARE_TUNNEL_TOKEN` for a stable named tunnel. Port 80/443 are never opened to the internet.                                    |
+| Database        | PostgreSQL 18 on the VM, tuned for 1 GB (shared_buffers 128 MB, max_connections 30), with `pg_trgm`, `unaccent` and `pgvector`. Listens on localhost only.                                                                                                                                                                                    |
+| Redis           | Redis 8 on localhost, maxmemory 64 MB. Used for sessions, rate limits, BullMQ queues and the AI cache.                                                                                                                                                                                                                                        |
+| Background work | A `worker` entrypoint in `apps/api` (same layers and services) for imports, EF matching and calculation, embeddings, PDF and email.                                                                                                                                                                                                           |
+| Email           | `nodemailer` over SMTP. **GCP blocks outbound port 25, and mail sent straight from a VM lands in spam**, so use an SMTP relay on 587 (e.g. Brevo / Gmail SMTP with an app password / Google Workspace relay). Dev uses **Mailpit**.                                                                                                           |
+| Files           | Uploads and generated PDFs live in `/opt/carbon-glint/shared/files`, behind a `FileStorage` interface.                                                                                                                                                                                                                                        |
+| Backups         | A nightly systemd timer runs `pg_dump`, keeps 7 local copies, and uploads to the Cloud Storage bucket (30-day lifecycle).                                                                                                                                                                                                                     |
+| CI/CD           | GitHub Actions: CI → build the API bundle (`pnpm deploy --prod`) and the web build → package a release tarball → **SSH into the VM** (key in GitHub secrets) → unpack to `releases/<sha>` → run migrations → switch the `current` symlink → `pm2 reload` → smoke test `/api/health` → keep the last 5 releases. Rollback is a symlink switch. |
+| Charts          | Apache ECharts inside MUI components (heatmap, bars, treemap).                                                                                                                                                                                                                                                                                |
+| Org chart       | React Flow (`@xyflow/react`) with automatic tree layout (`dagre`).                                                                                                                                                                                                                                                                            |
+| PDF             | HTML/React templates rendered to PDF. ⚠️ Headless Chromium is tight on 1 GB RAM, so PDFs run one at a time in the worker. If memory is too tight, upgrade the VM to `e2-small` (Phase 7 decision).                                                                                                                                            |
+| Spreadsheets    | `exceljs` (XLSX) and `papaparse` (CSV).                                                                                                                                                                                                                                                                                                       |
+| Typography      | **Livvic** (Google Fonts) across the whole app through the MUI theme. PDFs use it too.                                                                                                                                                                                                                                                        |
 
 Architecture rules are unchanged: OpenAPI-first, the generated SDK is the only frontend client,
 container/component split with MUI, and controller → service → repository → model on the backend
@@ -396,23 +402,57 @@ and citations, data quality (coverage, % estimated, overrides list), and an appe
 
 **Acceptance:** each format generates a PDF of 10 pages or fewer in under 30 s for 10k activities. Its totals match the dashboard for the same filters.
 
-## 12. Delivery plan (one phase at a time)
+## 12. Module 8: AI assistant (RAG chatbot)
 
-| #     | Phase                               | Contents                                                                                                                                                                                                                                                                     | Done when                                                                                                      |
-| ----- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **0** | **VM platform + Terraform**         | Terraform in `apps/infra` (VPC, firewall, IP, VM, disk, Artifact Registry, backup bucket, WIF); docker compose (caddy, api, worker, postgres, redis, mailpit for dev); `FileStorage`, SMTP mailer, BullMQ; CI/CD to VM; backups. Retire Cloud Run, Neon and Firebase config. | `terraform plan` is clean. `docker compose up` runs everything locally. CI deploys to the VM. Health is green. |
-| **1** | **Auth, tenancy, onboarding**       | landing, sign-up (work email + verification), sign-in, sessions, onboarding wizard, app shell with tenant, forgot password, invites, Super Admin seed and platform console, RLS                                                                                              | §5.6 passes                                                                                                    |
-| **2** | **Org Units**                       | React Flow tree + table, CRUD, re-parent                                                                                                                                                                                                                                     | §6 acceptance                                                                                                  |
-| **3** | **Taxonomy + Activity Definitions** | industries and categories seed, custom categories, AD CRUD, upload, AI and manual mapping, import job, sample XLSX and visual guide                                                                                                                                          | §7 acceptance                                                                                                  |
-| **4** | **EF library + engine**             | ETL for DEFRA, ADEME, EPA, CEA, NGA, EMA (IPCC once terms are checked), search API, Gemini matching, unit catalogue, calculation and trace, publish flow                                                                                                                     | factors searchable; published AD → CO₂e for every activity                                                     |
-| **5** | **Emission Factors tab**            | views, filters, lasagne, traceability panel, overrides                                                                                                                                                                                                                       | §9 acceptance                                                                                                  |
-| **6** | **Dashboard**                       | KPIs, lasagne, BU tree, trends                                                                                                                                                                                                                                               | §10                                                                                                            |
-| **7** | **Reports**                         | PDF engine and the six formats                                                                                                                                                                                                                                               | §11 acceptance                                                                                                 |
+A chat assistant, available from every page (a floating button plus a full-page **Assistant** tab), that answers questions about
+**the signed-in company's own data**, and answers with **charts** when a question goes beyond the default dashboard.
+
+**Examples:** "What were our Scope 2 emissions last quarter by branch?" · "Why is Pune Plant so high in March?" ·
+"Which emission factor did we use for diesel, and where does it come from?" · "Compare business travel this year vs last year as a chart" ·
+"Which activities still need review?"
+
+**How it works**
+
+1. **Retrieval (RAG):** tenant content is chunked and embedded with Gemini embeddings into **pgvector** in the same Postgres. That covers
+   org units, Activity Definitions and their descriptions, data-source metadata and mappings, emission factor details and citations,
+   override reasons, report summaries, and onboarding profile. Embeddings refresh through worker jobs when the source data changes.
+   Search is hybrid: vector similarity plus Postgres full-text search, then reranking.
+2. **Live numbers through tools, not guesses:** Gemini function-calling with a fixed set of **read-only, tenant-scoped tools**, e.g.
+   `getEmissions({ groupBy, scope, category, adId, orgUnitId, period, bucket })`, `listActivities(filters)`, `getTrace(activityId)`,
+   `getOrgTree()`. Tools call the same services as the dashboard, so the numbers always match it. **Gemini never writes SQL** and never sees other tenants' data.
+3. **Chart answers:** when the answer is tabular or comparative, the model returns a **chart spec** (a validated, constrained JSON:
+   `bar | stacked-bar | line | pie | heatmap | table`, with series, labels and units), validated against the OpenAPI schema. The
+   web app renders it with the same ECharts components as the dashboard. Each chart has "view data" (table), "download CSV", and
+   "open in Emission Factors tab with these filters".
+4. **Grounded and cited:** answers list their sources (e.g. "AD: Diesel generators", "DEFRA 2025 › Diesel"). If the data isn't there,
+   the assistant says so rather than inventing an answer.
+5. **Streaming** responses (server-sent events), conversation history per user, and suggested follow-up questions.
+
+**Guardrails:** tenant scoping is enforced in every tool and retrieval query (and by RLS). Prompts and answers are logged for audit.
+There are per-tenant daily token limits (Redis), and prompt-injection hygiene: retrieved text is treated as data, and tools are read-only. The assistant
+can't change data in v1.
+
+**Acceptance:** the answer to "total Scope 1 for <BU> in <period>" equals the dashboard value. Chart answers render and their
+CSV matches. A question about another company's data returns nothing. Answers cite their sources. The first tokens arrive in under 3 s on the VM.
+
+## 13. Delivery plan (one phase at a time)
+
+| #     | Phase                                           | Contents                                                                                                                                                                                                                                                                                                                              | Done when                                                                                                                           |
+| ----- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **0** | **VM platform + Terraform (GCP e2-micro, pm2)** | Terraform in `apps/infra` (e2-micro VM, disk, static IP, firewall, VM service account, backup bucket); VM bootstrap script (Node, pm2, Postgres, Redis, Caddy, cloudflared); worker entrypoint, BullMQ, SMTP mailer, `FileStorage`; Livvic theme; CI/CD over SSH; backups. Retire Cloud Run, Neon, Firebase and Docker deploy config. | `terraform validate` is clean. The bootstrap script provisions a fresh VM. CI deploys over SSH. Health is green through the tunnel. |
+| **1** | **Auth, tenancy, onboarding**                   | landing, sign-up (work email + verification), sign-in, sessions, onboarding wizard, app shell with tenant, forgot password, invites, Super Admin seed and platform console, RLS                                                                                                                                                       | §5.6 passes                                                                                                                         |
+| **2** | **Org Units**                                   | React Flow tree + table, CRUD, re-parent                                                                                                                                                                                                                                                                                              | §6 acceptance                                                                                                                       |
+| **3** | **Taxonomy + Activity Definitions**             | industries and categories seed, custom categories, AD CRUD, upload, AI and manual mapping, import job, sample XLSX and visual guide                                                                                                                                                                                                   | §7 acceptance                                                                                                                       |
+| **4** | **EF library + engine**                         | ETL for DEFRA, ADEME, EPA, CEA, NGA, EMA (IPCC once terms are checked), search API, Gemini matching, unit catalogue, calculation and trace, publish flow                                                                                                                                                                              | factors searchable; published AD → CO₂e for every activity                                                                          |
+| **5** | **Emission Factors tab**                        | views, filters, lasagne, traceability panel, overrides                                                                                                                                                                                                                                                                                | §9 acceptance                                                                                                                       |
+| **6** | **Dashboard**                                   | KPIs, lasagne, BU tree, trends                                                                                                                                                                                                                                                                                                        | §10                                                                                                                                 |
+| **7** | **Reports**                                     | PDF engine and the six formats                                                                                                                                                                                                                                                                                                        | §11 acceptance                                                                                                                      |
+| **8** | **AI assistant**                                | pgvector embeddings + jobs, tenant-scoped tools, chart-spec answers, streaming chat UI                                                                                                                                                                                                                                                | §12 acceptance                                                                                                                      |
 
 Each phase starts with the **OpenAPI contract** for its endpoints, follows the backend and frontend skills, and ships with
 service, controller, repository (Postgres) and frontend component and container tests, all running in CI.
 
-## 13. Data model (initial sketch)
+## 14. Data model (initial sketch)
 
 ```
 tenants(id, name, email_domain UNIQUE, industry_id, employee_band, bu_count, website, linkedin_url, gwp_basis, onboarded_at)
@@ -441,19 +481,22 @@ ef_overrides(id, tenant_id, activity_id, type[factor|custom_factor|custom_result
              citation, reason, created_by, created_at, reverted_at)
 reports(id, tenant_id, org_unit_id, format, period_start, period_end, status, file_key, created_by, created_at)
 audit_log(id, tenant_id, actor_id, action, entity, entity_id, before JSONB, after JSONB, at)
+embeddings(id, tenant_id, source_type, source_id, chunk_no, content, embedding vector(768), updated_at)   -- pgvector, HNSW index
+chat_conversations(id, tenant_id, user_id, title, created_at)
+chat_messages(id, conversation_id, role[user|assistant|tool], content, tool_calls JSONB, chart_spec JSONB, sources JSONB, tokens, created_at)
 ```
 
-## 14. Non-functional requirements
+## 15. Non-functional requirements
 
 - **Security:** argon2id hashes. httpOnly session cookies plus CSRF protection (SameSite and an origin check). Rate limits in Redis.
-  Tenant isolation in repositories and through Postgres RLS. Uploaded files are virus-size-limited and never executed. Secrets live only in `.env` on the VM.
+  Tenant isolation in repositories and through Postgres RLS. Uploaded files are size-limited and never executed. Secrets live in GitHub secrets and are written to `/opt/carbon-glint/shared/.env` (mode 600) on deploy.
 - **Auditability:** every calculation is reproducible and every change goes into `audit_log`. EF dataset versions are immutable.
 - **Performance:** importing 10k rows takes under 30 s. Dashboards for 100k activities respond in under 1 s (pre-aggregated materialised views if needed).
 - **AI cost and safety:** Gemini is only called on distinct inputs, cached, with bounded batches and structured JSON output. If Gemini is down, fall back to the top full-text-search match marked "Needs review".
 - **Reliability:** nightly database backups with a restore drill. Jobs retry with backoff. Emails are queued.
 - **Accessibility:** MUI defaults, keyboard-navigable flows, and charts with table alternatives.
 
-## 15. Open questions
+## 16. Open questions
 
 **Decided (2026-11-20):** Super Admin is global and seeded, and Admin is per company (§3). Single VM replaces
 Cloud Run, Neon and Firebase, with Terraform in `apps/infra` (§4). Email verification is required (§5.1). The lasagne chart is a heatmap (§9.3).
@@ -464,9 +507,9 @@ Still open:
 2. **NIRF:** which exact template or criteria should the college report follow? (Phase 7)
 3. **Middle East:** UAE and Saudi as listed, or other countries (Qatar, Oman, Bahrain)? (Phase 7)
 4. **ecoinvent:** do you have, or plan to buy, a licence? (Phase 4)
-5. **GCP project and region** for the VM, and a **domain name** for TLS. (Phase 0 apply)
+5. **GCP project ID** to apply Terraform into, and optionally a **domain on Cloudflare** for a stable tunnel URL (a quick tunnel works without one). (Phase 0 apply)
 
-## 16. Later (abatement, v2+)
+## 17. Later (abatement, v2+)
 
 Reduction targets (SBTi-style), initiatives with costs and expected tCO₂e savings, marginal abatement cost curves,
 scenario modelling, supplier engagement, market-based Scope 2 (RECs/PPAs), and assurance workflows.
