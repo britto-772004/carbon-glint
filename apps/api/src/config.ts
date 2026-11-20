@@ -8,7 +8,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8080),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  /** Postgres connection string. Local docker Postgres in dev, Neon in deployed envs. */
+  /** Postgres connection string (local docker in dev, native Postgres on the VM in production). */
   DATABASE_URL: z.url(),
   REDIS_URL: z.url().default('redis://127.0.0.1:6379'),
   /** Public base URL of the web app (used in email links). */

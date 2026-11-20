@@ -1,5 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource/livvic/400.css';
+import '@fontsource/livvic/500.css';
+import '@fontsource/livvic/600.css';
+import '@fontsource/livvic/700.css';
 import { initSdk } from './lib/sdk';
 import { queryClient } from './lib/queryClient';
 import { AppProviders } from './providers/AppProviders';

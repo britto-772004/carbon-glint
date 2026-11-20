@@ -14,7 +14,7 @@ permissions:
 jobs:
   verify:
     name: Lint, typecheck, test, build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -26,18 +26,18 @@ jobs:
       - name: Generate types + SDK from OpenAPI
         run: pnpm generate
       - run: pnpm format:check
-      - name: Lint (OpenAPI spec + ESLint)
+      - name: Lint (OpenAPI spec + ESLint incl. architecture rules)
         run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm -r run build
 
-  api-integration:
-    name: API integration tests (Postgres)
-    runs-on: ubuntu-latest
+  integration:
+    name: API integration tests (Postgres + Redis)
+    runs-on: ubuntu-24.04
     services:
       postgres:
-        image: postgres:17-alpine
+        image: pgvector/pgvector:0.8.7-pg18-bookworm
         env:
           POSTGRES_USER: carbon
           POSTGRES_PASSWORD: carbon
@@ -46,8 +46,14 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U carbon -d carbon_glint_test"
           --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:8.6-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       TEST_DATABASE_URL: postgres://carbon:carbon@localhost:5432/carbon_glint_test
+      TEST_REDIS_URL: redis://localhost:6379/15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -59,16 +65,17 @@ jobs:
       - run: pnpm generate
       - run: pnpm test:integration
 
-  api-image:
-    name: API Docker image builds
-    runs-on: ubuntu-latest
+  infra:
+    name: Terraform + shell scripts
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - uses: hashicorp/setup-terraform@v3
+      - name: terraform fmt + validate
+        working-directory: apps/infra/terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate
+      - name: shellcheck
+        run: shellcheck -S warning apps/infra/scripts/*.sh

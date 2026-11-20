@@ -5,7 +5,7 @@ description: Build or change the Carbon Glint web app (apps/web). Use whenever c
 
 # Frontend: containers, components, Material UI, generated SDK
 
-Stack: React 19 · Vite · TypeScript · Material UI (MUI v9) · TanStack Query · `@carbon-glint/sdk` (generated from OpenAPI) · Vitest + Testing Library + MSW. Deployed to Firebase Hosting.
+Stack: React 19 · Vite · TypeScript · Material UI (MUI v9) · TanStack Query · `@carbon-glint/sdk` (generated from OpenAPI) · Vitest + Testing Library + MSW. Served by Caddy on the same VM.
 
 ## Non-negotiable rules (ESLint enforces most of them)
 

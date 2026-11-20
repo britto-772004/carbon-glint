@@ -22,16 +22,18 @@ tar -xzf "$TARBALL" -C "$RELEASE_DIR"
 install -m 600 "$ENV_UPLOAD" "$APP_DIR/shared/.env"
 rm -f "$TARBALL" "$ENV_UPLOAD"
 
-set -a
-# shellcheck disable=SC1091
-. "$APP_DIR/shared/.env"
-set +a
+# Read single keys from the env file (never source it: values may contain spaces or shell metacharacters).
+envval() { grep -E "^$1=" "$APP_DIR/shared/.env" | tail -1 | cut -d= -f2- | sed -E 's/^"(.*)"$/\1/'; }
+POSTGRES_PASSWORD="$(envval POSTGRES_PASSWORD)"
+CLOUDFLARE_TUNNEL_TOKEN="$(envval CLOUDFLARE_TUNNEL_TOKEN)"
+[ -n "$POSTGRES_PASSWORD" ] || { echo "POSTGRES_PASSWORD missing from .env" >&2; exit 1; }
 
 # ── 2. Database role, database, extensions (idempotent) ──────────────────────────
 log "Ensuring database"
-sudo -u postgres psql -v ON_ERROR_STOP=1 -q <<SQL
+# Password is passed as a psql variable and quoted by psql (:'pw'), so any characters are safe.
+sudo -u postgres psql -v ON_ERROR_STOP=1 -q -v pw="$POSTGRES_PASSWORD" <<SQL
 SELECT 'CREATE ROLE $DB_USER LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DB_USER')\gexec
-ALTER ROLE $DB_USER WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}';
+ALTER ROLE $DB_USER WITH LOGIN PASSWORD :'pw';
 SELECT 'CREATE DATABASE $DB_NAME OWNER $DB_USER' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME')\gexec
 SQL
 sudo -u postgres psql -v ON_ERROR_STOP=1 -q -d "$DB_NAME" <<'SQL'

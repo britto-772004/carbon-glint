@@ -2,13 +2,13 @@
 
 Contract-first TypeScript monorepo: **React** web app + **Node/Express** API, driven by a single **OpenAPI** spec.
 
-| Layer    | Tech                                                        | Deployed to      |
-| -------- | ----------------------------------------------------------- | ---------------- |
-| Contract | OpenAPI 3.1 (`packages/api-spec/openapi.yaml`)              | —                |
-| SDK      | `@hey-api/openapi-ts` → fetch client + TanStack Query hooks | —                |
-| API      | Express 5, express-openapi-validator, Drizzle, Gemini       | Google Cloud Run |
-| Web      | React 19, Vite, TanStack Query                              | Firebase Hosting |
-| Database | Postgres (Docker locally, **Neon** in deployed envs)        | Neon             |
+| Layer    | Tech                                                          | Deployed to                         |
+| -------- | ------------------------------------------------------------- | ----------------------------------- |
+| Contract | OpenAPI 3.1 (`packages/api-spec/openapi.yaml`)                | —                                   |
+| SDK      | `@hey-api/openapi-ts` → fetch client + TanStack Query hooks   | —                                   |
+| API      | Express 5, express-openapi-validator, Drizzle, BullMQ, Gemini | GCP e2-micro VM (pm2)               |
+| Web      | React 19, Vite, Material UI (Livvic), TanStack Query          | Same VM (Caddy + Cloudflare Tunnel) |
+| Database | Postgres 18 + pgvector, Redis 8                               | Same VM (native)                    |
 
 ```
 packages/
@@ -67,12 +67,12 @@ Requirements: Node 22+ (24 recommended, see `.nvmrc`), pnpm 10, Docker.
 
 ```bash
 pnpm install
-pnpm db:up                          # local Postgres on :5432
+pnpm db:up                          # local Postgres :5432, Redis :6379, Mailpit :8025
 cp apps/api/.env.example apps/api/.env   # add GEMINI_API_KEY if needed
 pnpm dev                            # generate + API on :8080 + web on :5173
 ```
 
-The web dev server proxies `/api/**` to the API, mirroring the Firebase Hosting rewrite in production.
+The web dev server proxies `/api/**` to the API, mirroring Caddy in production. Local emails appear in Mailpit at http://localhost:8025.
 
 | Command            | What it does                                              |
 | ------------------ | --------------------------------------------------------- |
@@ -88,13 +88,6 @@ Generated code (`**/src/generated/`) is git-ignored and rebuilt by `pnpm generat
 
 ## Deployment
 
-- **Web → Firebase Hosting.** `/api/**` is rewritten to the Cloud Run service, so the browser talks to
-  one origin (no CORS).
-- **API → Cloud Run**, built from `apps/api/Dockerfile`. Secrets (`DATABASE_URL`, `GEMINI_API_KEY`) come
-  from Secret Manager.
-- **Database → Neon.** Migrations run in CI before the API deploys.
-
-CI (`.github/workflows/ci.yml`) runs on every PR. Pushing to `main` runs CI → migrate → deploy API → deploy web
-(`.github/workflows/deploy.yml`), authenticating to GCP keylessly via Workload Identity Federation.
-
-One-time cloud setup: see [docs/deployment.md](docs/deployment.md).
+Everything runs on **one GCP e2-micro VM**, natively, with no containers. The API and worker run under pm2, alongside
+Postgres 18, Redis 8, Caddy (serving the web app and proxying `/api`), and a Cloudflare Tunnel for HTTPS. Pushing to `main` runs CI, then GitHub Actions
+SSHes into the VM and activates the new release. Setup guide: [apps/infra/README.md](apps/infra/README.md).

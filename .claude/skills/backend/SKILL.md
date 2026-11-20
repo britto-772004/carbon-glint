@@ -5,7 +5,7 @@ description: Build or change the Carbon Glint API (apps/api) and its OpenAPI con
 
 # Backend: contract-first, layered API
 
-Stack: Express 5 · express-openapi-validator · TypeScript (ESM, NodeNext) · Drizzle + `pg` (local Postgres / Neon) · Gemini (`@google/genai`) · Vitest + supertest. Deployed to Cloud Run.
+Stack: Express 5 · express-openapi-validator · TypeScript (ESM, NodeNext) · Drizzle + `pg` (Postgres 18) · Redis + BullMQ · Gemini (`@google/genai`) · Vitest + supertest. Deployed to a GCP e2-micro VM under pm2 (see `apps/infra`).
 
 ## Architecture
 
@@ -156,8 +156,8 @@ Composition root: `src/server.ts` wires `createRepositories(db)`, then `createSe
 
 - Use `deps.ai` (`AiClient` in `src/lib/gemini.ts`), and only from services. Add capabilities such as structured JSON output or streaming as methods on `AiClient`. Never import `@google/genai` elsewhere.
 - Wrap provider failures in `UpstreamError` (502).
-- The model comes from `GEMINI_MODEL`, and the key from Secret Manager in production.
-- Firebase Hosting → Cloud Run times out at 60 s. Keep calls under that, or use the Cloud Run URL directly for streaming.
+- The model comes from `GEMINI_MODEL`, and the key from GitHub secrets (written to the VM's `.env`).
+- Keep long AI work in worker jobs (`deps.jobs.enqueue`). The VM has 1 GB of RAM.
 
 ## Testing (required for every change)
 
@@ -175,7 +175,7 @@ Helpers:
 - `createTestApp({ repositories?, services?, ai?, config?, controllers? })` returns the real app and `api` (supertest). Pass `services: { x: { method: async () => { throw new NotFoundError('…') } } }` to test error mapping.
 - `fakeRepositories({ project: { findById: vi.fn(async () => null) } })` overrides individual methods. Everything else keeps its defaults.
 - `fakeAi(reply)` is a `vi.fn`. **Never call real Gemini in tests.**
-- `createTestDatabase()` and `resetDatabase()` come from `test/integration/db.ts`. Call `resetDatabase` in `beforeEach`. The database name must end in `_test`, which guards against pointing at Neon. Migrations run once in `global-setup.ts`. Locally, run `pnpm db:up` first. CI provides Postgres.
+- `createTestDatabase()` and `resetDatabase()` come from `test/integration/db.ts`. Call `resetDatabase` in `beforeEach`. The database name must end in `_test`, which guards against pointing at a real database. Migrations run once in `global-setup.ts`. Locally, run `pnpm db:up` first. CI provides Postgres.
 
 What to cover:
 

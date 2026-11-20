@@ -1,5 +1,7 @@
 name: Deploy
 
+# Builds a release on GitHub's runner, then SSHes into the e2-micro VM and activates it with pm2.
+# One-time setup: apps/infra/README.md
 on:
   push:
     branches: [main]
@@ -12,103 +14,17 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  # Must match "region" / "serviceId" of the /api/** rewrite in firebase.json.
-  REGION: us-central1
-  SERVICE: carbon-glint-api
-  AR_REPOSITORY: carbon-glint
-
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
 
-  migrate:
-    name: Migrate Neon database
+  deploy:
+    name: Build release and deploy to VM
     needs: ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # same Ubuntu/glibc as the VM image, so native modules match
     environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --filter @carbon-glint/api...
-      - name: Apply Drizzle migrations
-        env:
-          # Neon *direct* (non-pooled) connection string — migrations need a session connection.
-          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_DIRECT }}
-        run: |
-          if compgen -G "apps/api/drizzle/*.sql" > /dev/null; then
-            pnpm db:migrate
-          else
-            echo "No migrations yet — skipping."
-          fi
-
-  deploy-api:
-    name: Deploy API to Cloud Run
-    needs: migrate
-    runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      contents: read
-      id-token: write
-    outputs:
-      url: ${{ steps.deploy.outputs.url }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
-
-      - uses: google-github-actions/setup-gcloud@v2
-
-      - name: Build and push image
-        run: |
-          IMAGE="${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPOSITORY}/api:${GITHUB_SHA}"
-          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
-          docker build -f apps/api/Dockerfile -t "$IMAGE" .
-          docker push "$IMAGE"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
-
-      - id: deploy
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ env.SERVICE }}
-          region: ${{ env.REGION }}
-          image: ${{ env.IMAGE }}
-          env_vars: |
-            NODE_ENV=production
-            APP_VERSION=${{ github.sha }}
-            GEMINI_MODEL=${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
-          secrets: |
-            DATABASE_URL=carbon-glint-database-url:latest
-            GEMINI_API_KEY=carbon-glint-gemini-api-key:latest
-          flags: >-
-            --service-account=carbon-glint-api@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
-            --allow-unauthenticated
-            --port=8080
-            --cpu=1
-            --memory=512Mi
-            --min-instances=0
-            --max-instances=5
-
-      - name: Smoke test
-        run: curl --fail --silent --show-error --retry 5 --retry-delay 3 "${{ steps.deploy.outputs.url }}/api/health"
-
-  deploy-web:
-    name: Deploy web to Firebase Hosting
-    needs: deploy-api
-    runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      contents: read
-      id-token: write
+    env:
+      RELEASE_ID: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -118,15 +34,82 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm generate
+
+      - name: Build API bundle (prod dependencies only)
+        run: |
+          pnpm --filter @carbon-glint/api run build
+          pnpm --filter @carbon-glint/api deploy --prod --legacy release/api
       - name: Build web
         env:
           VITE_API_BASE_URL: /api
-        run: pnpm --filter @carbon-glint/web build
+        run: |
+          pnpm --filter @carbon-glint/web run build
+          cp -r apps/web/dist release/web
+      - name: Assemble release
+        run: |
+          cp apps/infra/deploy/ecosystem.config.cjs apps/infra/deploy/Caddyfile release/
+          mkdir -p release/scripts && cp apps/infra/scripts/*.sh release/scripts/
+          tar -czf "carbon-glint-$RELEASE_ID.tgz" -C release .
+          ls -lh "carbon-glint-$RELEASE_ID.tgz"
 
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Write production .env from secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          APP_URL: ${{ vars.APP_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
+          SUPERADMIN_EMAIL: ${{ secrets.SUPERADMIN_EMAIL }}
+          SUPERADMIN_PASSWORD: ${{ secrets.SUPERADMIN_PASSWORD }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: node apps/infra/scripts/write-env.mjs > carbon-glint.env
 
-      - name: Deploy to Firebase Hosting
-        run: pnpm exec firebase deploy --only hosting --project "$GCP_PROJECT_ID" --non-interactive
+      - name: Configure SSH
+        env:
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          if [ -n "$VM_KNOWN_HOSTS" ]; then printf '%s\n' "$VM_KNOWN_HOSTS" > ~/.ssh/known_hosts;
+          else ssh-keyscan -T 15 -H "$VM_HOST" > ~/.ssh/known_hosts; fi
+          cat > ~/.ssh/config <<CFG
+          Host vm
+            HostName $VM_HOST
+            User ${{ secrets.VM_USER || 'deploy' }}
+            IdentityFile ~/.ssh/id_deploy
+            ServerAliveInterval 30
+          CFG
+
+      - name: Wait for VM bootstrap (first boot installs Node, Postgres, Redis, Caddy, pm2)
+        run: |
+          for i in $(seq 1 60); do
+            if ssh vm 'command -v pm2 >/dev/null && systemctl is-active --quiet postgresql redis-server caddy'; then exit 0; fi
+            echo "waiting for bootstrap ($i/60)…"; sleep 10
+          done
+          echo "VM bootstrap did not finish — see /var/log/carbon-glint-bootstrap.log on the VM" >&2; exit 1
+
+      - name: Upload and activate release
+        run: |
+          scp "carbon-glint-$RELEASE_ID.tgz" carbon-glint.env apps/infra/scripts/deploy-release.sh vm:/tmp/
+          ssh vm "bash /tmp/deploy-release.sh $RELEASE_ID"
+
+      - name: Seed super admin (idempotent)
+        run: ssh vm 'cd /opt/carbon-glint/current/api && node --env-file=/opt/carbon-glint/shared/.env dist/seed-superadmin.js || true'
+
+      - name: Public URL
+        run: |
+          URL="$(ssh vm '/usr/local/bin/carbon-glint-tunnel-url' || true)"
+          echo "### 🚀 Deployed \`${RELEASE_ID:0:7}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "${URL:-Named Cloudflare tunnel (see your Cloudflare dashboard)}" >> "$GITHUB_STEP_SUMMARY"
+          echo "$URL"
+
+      - name: Clean up
+        if: always()
+        run: rm -f ~/.ssh/id_deploy carbon-glint.env

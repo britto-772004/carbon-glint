@@ -9,7 +9,7 @@ export interface DatabaseHandle {
   close(): Promise<void>;
 }
 
-/** Works for local Postgres and Neon (use the pooled Neon URL with `sslmode=require`). */
+/** node-postgres pool sized for the 1 GB VM (Postgres max_connections = 30). */
 export function createDatabase(connectionString: string): DatabaseHandle {
   const pool = new pg.Pool({
     connectionString,
