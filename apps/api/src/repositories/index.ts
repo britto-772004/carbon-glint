@@ -7,6 +7,7 @@ import {
 import { createActivityRepository, type ActivityRepository } from './activity.repository.js';
 import { createDataSourceRepository, type DataSourceRepository } from './data-source.repository.js';
 import { createGhgCategoryRepository, type GhgCategoryRepository } from './ghg-category.repository.js';
+import { createCalculationRepository, type CalculationRepository } from './calculation.repository.js';
 import { createEmissionFactorRepository, type EmissionFactorRepository } from './emission-factor.repository.js';
 import { createAuthTokenRepository, type AuthTokenRepository } from './auth-token.repository.js';
 import { createIndustryRepository, type IndustryRepository } from './industry.repository.js';
@@ -36,6 +37,7 @@ export interface Repositories {
   dataSources: DataSourceRepository;
   activities: ActivityRepository;
   emissionFactors: EmissionFactorRepository;
+  calculations: CalculationRepository;
   sessions: SessionRepository;
   rateLimits: RateLimitRepository;
   /** Run `fn` in one database transaction; the repositories passed to it all use that transaction. */
@@ -55,6 +57,7 @@ const build = (db: DbExecutor, stores: DataStores): Repositories => ({
   dataSources: createDataSourceRepository(db),
   activities: createActivityRepository(db),
   emissionFactors: createEmissionFactorRepository(db),
+  calculations: createCalculationRepository(db),
   sessions: createSessionRepository(stores.redis),
   rateLimits: createRateLimitRepository(stores.redis),
   transaction: (fn) => stores.db.transaction((tx) => fn(build(tx, stores))),

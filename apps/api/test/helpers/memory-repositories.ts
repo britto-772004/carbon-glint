@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import type {
+  CalculationModel,
+  EfSourceModel,
+  EmissionFactorModel,
   ActivityDefinitionModel,
   ActivityModel,
   AuthTokenModel,
@@ -34,6 +37,9 @@ export interface MemoryStore {
   activityDefinitions: ActivityDefinitionModel[];
   dataSources: DataSourceModel[];
   activities: ActivityModel[];
+  efSources: EfSourceModel[];
+  emissionFactors: EmissionFactorModel[];
+  calculations: CalculationModel[];
   sessions: Map<string, { record: SessionRecord; expiresAt: number }>;
   rateCounters: Map<string, { count: number; resetAt: number }>;
 }
@@ -81,6 +87,9 @@ export function createMemoryStore(): MemoryStore {
     activityDefinitions: [],
     dataSources: [],
     activities: [],
+    efSources: [],
+    emissionFactors: [],
+    calculations: [],
     sessions: new Map(),
     rateCounters: new Map(),
   };
@@ -91,6 +100,20 @@ const now = () => new Date();
 export function createMemoryRepositories(store: MemoryStore = createMemoryStore()): Repositories & {
   store: MemoryStore;
 } {
+  const calcRow = (r: Parameters<Repositories['calculations']['upsert']>[0]): CalculationModel =>
+    ({
+      id: randomUUID(),
+      orgUnitId: null,
+      factorId: null,
+      confidence: null,
+      normalizedQuantity: null,
+      conversionFactor: null,
+      co2eKg: 0,
+      trace: '{}',
+      calculatedAt: now(),
+      ...r,
+    }) as CalculationModel;
+
   const defRow = (definition: ActivityDefinitionModel) => ({
     definition,
     category: store.ghgCategories.find((c) => c.id === definition.categoryId)!,
@@ -397,6 +420,86 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
         store.activities.filter((a) => a.tenantId === tenantId && a.activityDefinitionId === adId),
       countByOrgUnit: async (tenantId, orgUnitId) =>
         store.activities.filter((a) => a.tenantId === tenantId && a.orgUnitId === orgUnitId).length,
+    },
+
+    emissionFactors: {
+      async importDataset({ source, factors }) {
+        const old = store.efSources.find((x) => x.code === source.code);
+        if (old) {
+          store.efSources = store.efSources.filter((x) => x !== old);
+          store.emissionFactors = store.emissionFactors.filter((f) => f.sourceId !== old.id);
+        }
+        const src: EfSourceModel = { id: randomUUID(), factorCount: factors.length, importedAt: now(), ...source };
+        store.efSources.push(src);
+        for (const f of factors) {
+          store.emissionFactors.push({
+            id: randomUUID(),
+            sourceId: src.id,
+            year: source.year,
+            citationUrl: source.url,
+            search: '',
+            ...f,
+          });
+        }
+        return factors.length;
+      },
+      listSources: async () => store.efSources,
+      async findById(id) {
+        const factor = store.emissionFactors.find((f) => f.id === id);
+        const source = factor && store.efSources.find((x) => x.id === factor.sourceId);
+        return factor && source ? { factor, source } : null;
+      },
+      async findManyByIds(ids) {
+        return store.emissionFactors
+          .filter((f) => ids.includes(f.id))
+          .map((factor) => ({ factor, source: store.efSources.find((x) => x.id === factor.sourceId)! }));
+      },
+      async search({ query, units, scopeHint, limit = 20 }) {
+        const words = query
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter((w) => w.length > 2);
+        return store.emissionFactors
+          .filter(
+            (f) => f.unit && (!units?.length || units.includes(f.unit)) && (!scopeHint || f.scopeHint === scopeHint),
+          )
+          .map((factor) => {
+            const hay = `${factor.name} ${factor.category}`.toLowerCase();
+            const score = words.filter((w) => hay.includes(w)).length / Math.max(1, words.length);
+            return { factor, source: store.efSources.find((x) => x.id === factor.sourceId)!, score };
+          })
+          .filter((h) => h.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, limit);
+      },
+    },
+
+    calculations: {
+      listByDefinition: async (tenantId, adId) =>
+        store.calculations.filter((c) => c.tenantId === tenantId && c.activityDefinitionId === adId),
+      findByActivity: async (tenantId, activityId) =>
+        store.calculations.find((c) => c.tenantId === tenantId && c.activityId === activityId) ?? null,
+      async replaceForDefinition(tenantId, adId, rows) {
+        store.calculations = store.calculations.filter(
+          (c) => !(c.tenantId === tenantId && c.activityDefinitionId === adId && c.status !== 'overridden'),
+        );
+        for (const r of rows) {
+          if (store.calculations.some((c) => c.activityId === r.activityId)) continue;
+          store.calculations.push(calcRow(r));
+        }
+      },
+      async upsert(row) {
+        store.calculations = store.calculations.filter((c) => c.activityId !== row.activityId);
+        const saved = calcRow(row);
+        store.calculations.push(saved);
+        return saved;
+      },
+      listByTenant: async (tenantId, filter) =>
+        store.calculations.filter(
+          (c) =>
+            c.tenantId === tenantId &&
+            (!filter?.activityDefinitionIds?.length || filter.activityDefinitionIds.includes(c.activityDefinitionId)),
+        ),
     },
 
     sessions: {

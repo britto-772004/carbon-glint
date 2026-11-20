@@ -6,6 +6,7 @@ import type { Repositories } from '../repositories/index.js';
 import { createActivityDefinitionService, type ActivityDefinitionService } from './activity-definition.service.js';
 import { createDataSourceService, type DataSourceService } from './data-source.service.js';
 import { createTaxonomyService, type TaxonomyService } from './taxonomy.service.js';
+import { createCalculationService, type CalculationService } from './calculation.service.js';
 import { createAuthService, type AuthService } from './auth.service.js';
 import { createHealthService, type HealthService } from './health.service.js';
 import { createOrgUnitService, type OrgUnitService } from './org-unit.service.js';
@@ -33,6 +34,7 @@ export interface Services {
   taxonomy: TaxonomyService;
   activityDefinitions: ActivityDefinitionService;
   dataSources: DataSourceService;
+  calculations: CalculationService;
 }
 
 export const createServices = (deps: ServiceDeps): Services => {
@@ -47,5 +49,6 @@ export const createServices = (deps: ServiceDeps): Services => {
     taxonomy: createTaxonomyService(deps),
     activityDefinitions: createActivityDefinitionService(deps),
     dataSources: createDataSourceService(deps),
+    calculations: createCalculationService(deps),
   };
 };
