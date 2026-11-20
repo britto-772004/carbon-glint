@@ -7,7 +7,7 @@ const base = { DATABASE_URL: 'postgres://u:p@localhost:5432/db' };
 describe('createAiClient (runtime provider selection)', () => {
   it('uses Gemini by default and the provider default model', () => {
     const ai = createAiClient(loadConfig({ ...base, GEMINI_API_KEY: 'k' }));
-    expect(ai).toMatchObject({ provider: 'gemini', model: 'gemini-2.5-flash', available: true });
+    expect(ai).toMatchObject({ provider: 'gemini', model: 'gemini-3.8-flash', available: true });
   });
 
   it('uses OpenAI when LLM_PROVIDER=openai, and LLM_MODEL overrides the model', () => {

@@ -28,7 +28,7 @@ x-api: &api
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-    GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+    GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
     SMTP_HOST: mailpit
     SMTP_PORT: '1025'
     MAIL_FROM: Carbon Glint <no-reply@carbonglint.local>

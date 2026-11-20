@@ -20,7 +20,7 @@ x-api: &api
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-    GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+    GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
     SMTP_HOST: ${SMTP_HOST:-}
     SMTP_PORT: ${SMTP_PORT:-587}
     SMTP_USER: ${SMTP_USER:-}

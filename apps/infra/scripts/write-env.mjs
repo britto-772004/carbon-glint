@@ -40,7 +40,7 @@ const values = {
   LLM_PROVIDER: env.LLM_PROVIDER || 'gemini',
   LLM_MODEL: env.LLM_MODEL ?? '',
   GEMINI_API_KEY: env.GEMINI_API_KEY ?? '',
-  GEMINI_MODEL: env.GEMINI_MODEL || 'gemini-2.5-flash',
+  GEMINI_MODEL: env.GEMINI_MODEL || 'gemini-3.8-flash',
   OPENAI_API_KEY: env.OPENAI_API_KEY ?? '',
   OPENAI_MODEL: env.OPENAI_MODEL || 'gpt-4o-mini',
   OPENAI_EMBEDDING_MODEL: env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',

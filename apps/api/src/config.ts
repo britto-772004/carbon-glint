@@ -37,7 +37,7 @@ const EnvSchema = z.object({
       .default(168),
   ),
   GEMINI_API_KEY: optional(z.string().min(1).optional()),
-  GEMINI_MODEL: optional(z.string().min(1).default('gemini-2.5-flash')),
+  GEMINI_MODEL: optional(z.string().min(1).default('gemini-3.8-flash')),
   OPENAI_API_KEY: optional(z.string().min(1).optional()),
   OPENAI_MODEL: optional(z.string().min(1).default('gpt-4o-mini')),
   OPENAI_EMBEDDING_MODEL: optional(z.string().min(1).default('text-embedding-3-small')),
