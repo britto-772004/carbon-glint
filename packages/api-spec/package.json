@@ -1,0 +1,27 @@
+{
+  "name": "@carbon-glint/api-spec",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OpenAPI contract — the single source of truth for routes, DTOs and the client SDK",
+  "files": [
+    "openapi.yaml",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts"
+    },
+    "./openapi.yaml": "./openapi.yaml"
+  },
+  "scripts": {
+    "generate": "openapi-typescript openapi.yaml -o src/generated/schema.d.ts",
+    "lint": "redocly lint openapi.yaml",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.82.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^6.0.3"
+  }
+}

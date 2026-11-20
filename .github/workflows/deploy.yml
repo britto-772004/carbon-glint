@@ -1,0 +1,132 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  # Must match "region" / "serviceId" of the /api/** rewrite in firebase.json.
+  REGION: us-central1
+  SERVICE: carbon-glint-api
+  AR_REPOSITORY: carbon-glint
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  migrate:
+    name: Migrate Neon database
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @carbon-glint/api...
+      - name: Apply Drizzle migrations
+        env:
+          # Neon *direct* (non-pooled) connection string — migrations need a session connection.
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_DIRECT }}
+        run: |
+          if compgen -G "apps/api/drizzle/*.sql" > /dev/null; then
+            pnpm db:migrate
+          else
+            echo "No migrations yet — skipping."
+          fi
+
+  deploy-api:
+    name: Deploy API to Cloud Run
+    needs: migrate
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        run: |
+          IMAGE="${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPOSITORY}/api:${GITHUB_SHA}"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build -f apps/api/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}
+          env_vars: |
+            NODE_ENV=production
+            APP_VERSION=${{ github.sha }}
+            GEMINI_MODEL=${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          secrets: |
+            DATABASE_URL=carbon-glint-database-url:latest
+            GEMINI_API_KEY=carbon-glint-gemini-api-key:latest
+          flags: >-
+            --service-account=carbon-glint-api@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+            --allow-unauthenticated
+            --port=8080
+            --cpu=1
+            --memory=512Mi
+            --min-instances=0
+            --max-instances=5
+
+      - name: Smoke test
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 3 "${{ steps.deploy.outputs.url }}/api/health"
+
+  deploy-web:
+    name: Deploy web to Firebase Hosting
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm generate
+      - name: Build web
+        env:
+          VITE_API_BASE_URL: /api
+        run: pnpm --filter @carbon-glint/web build
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Firebase Hosting
+        run: pnpm exec firebase deploy --only hosting --project "$GCP_PROJECT_ID" --non-interactive

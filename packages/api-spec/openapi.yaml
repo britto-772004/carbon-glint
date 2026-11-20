@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info:
+  title: Carbon Glint API
+  version: 0.1.0
+  description: |
+    Single source of truth for the Carbon Glint API.
+
+    - The backend mounts routes and validates requests/responses directly from this file
+      (express-openapi-validator). Each operation's `operationId` maps to a handler.
+    - The web client SDK (`@carbon-glint/sdk`) is generated from this file.
+    - Never hand-write DTOs in the backend or frontend — change this spec and regenerate.
+  license:
+    name: UNLICENSED
+    identifier: UNLICENSED
+servers:
+  - url: /api
+    description: Same-origin (Firebase Hosting rewrites /api/** to Cloud Run)
+tags:
+  - name: system
+    description: Operational endpoints
+security: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [system]
+      summary: Service health
+      description: Reports liveness of the API and the status of its dependencies.
+      responses:
+        '200':
+          description: Health report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, version, uptimeSeconds, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        version:
+          type: string
+          examples: ['0.1.0']
+        uptimeSeconds:
+          type: integer
+          minimum: 0
+        checks:
+          type: object
+          additionalProperties: false
+          required: [database]
+          properties:
+            database:
+              $ref: '#/components/schemas/DependencyStatus'
+    DependencyStatus:
+      type: string
+      enum: [up, down]
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          examples: [VALIDATION_ERROR]
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        path:
+          type: string
+        message:
+          type: string

@@ -1,0 +1,18 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+
+# Generated from packages/api-spec/openapi.yaml — run `pnpm generate`
+packages/api-spec/src/generated/
+packages/sdk/src/generated/
+
+# Firebase
+.firebase/
+firebase-debug.log*
+
+.DS_Store
+*.log

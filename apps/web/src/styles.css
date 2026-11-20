@@ -1,0 +1,21 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: light dark;
+}
+.app {
+  max-width: 40rem;
+  margin: 4rem auto;
+  padding: 0 1rem;
+}
+.health {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+}
+.health dd {
+  margin: 0;
+}
+.health--error {
+  display: block;
+  color: #c0392b;
+}

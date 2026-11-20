@@ -1,0 +1,35 @@
+{
+  "name": "carbon-glint",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "generate": "pnpm --filter @carbon-glint/api-spec --filter @carbon-glint/sdk run generate",
+    "dev": "pnpm generate && pnpm --parallel --filter @carbon-glint/api --filter @carbon-glint/web run dev",
+    "build": "pnpm generate && pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d postgres",
+    "db:generate": "pnpm --filter @carbon-glint/api run db:generate",
+    "db:migrate": "pnpm --filter @carbon-glint/api run db:migrate",
+    "deploy:web": "firebase deploy --only hosting --non-interactive"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.8",
+    "firebase-tools": "^15.37.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.73.0"
+  }
+}

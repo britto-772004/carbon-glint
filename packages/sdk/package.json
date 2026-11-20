@@ -1,0 +1,22 @@
+{
+  "name": "@carbon-glint/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Client SDK generated from @carbon-glint/api-spec. The only way the web app talks to the API.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.99.0",
+    "@tanstack/react-query": "^5.108.1",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5"
+  }
+}
