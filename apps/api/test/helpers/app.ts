@@ -7,7 +7,7 @@ import type { Controllers } from '../../src/openapi/types.js';
 import type { Repositories } from '../../src/repositories/index.js';
 import { createServices, type ServiceDeps, type Services } from '../../src/services/index.js';
 import type { AiClient } from '../../src/lib/gemini.js';
-import { fakeAi, fakeRepositories } from './fakes.js';
+import { fakeAi, fakeJobQueue, fakeRepositories } from './fakes.js';
 
 export const testConfig = (env: Record<string, string> = {}): Config =>
   loadConfig({
@@ -23,6 +23,7 @@ export function createTestServices(overrides: Partial<ServiceDeps> = {}) {
   const deps: ServiceDeps = {
     repositories: fakeRepositories(),
     ai: fakeAi(),
+    jobs: fakeJobQueue(),
     config: testConfig(),
     ...overrides,
   };

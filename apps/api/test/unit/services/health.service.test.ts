@@ -9,14 +9,15 @@ describe('HealthService', () => {
     await expect(services.health.getHealth()).resolves.toMatchObject({
       status: 'ok',
       version: '1.2.3',
-      checks: { database: 'up' },
+      checks: { database: 'up', redis: 'up' },
     });
-    expect(repositories.system.ping).toHaveBeenCalledOnce();
+    expect(repositories.system.pingDatabase).toHaveBeenCalledOnce();
+    expect(repositories.system.pingRedis).toHaveBeenCalledOnce();
   });
 
   it('reports degraded when the database does not respond', async () => {
     const { services } = createTestServices({
-      repositories: fakeRepositories({ system: { ping: vi.fn(async () => false) } }),
+      repositories: fakeRepositories({ system: { pingDatabase: vi.fn(async () => false) } }),
     });
     await expect(services.health.getHealth()).resolves.toMatchObject({
       status: 'degraded',

@@ -12,7 +12,7 @@ describe('GET /api/health', () => {
 
   it('200 degraded when the repository reports the DB down', async () => {
     const { api } = createTestApp({
-      repositories: fakeRepositories({ system: { ping: vi.fn(async () => false) } }),
+      repositories: fakeRepositories({ system: { pingDatabase: vi.fn(async () => false) } }),
     });
     const res = await api.get('/api/health').expect(200);
     expect(res.body).toMatchObject({ status: 'degraded' });

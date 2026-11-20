@@ -10,6 +10,17 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Postgres connection string. Local docker Postgres in dev, Neon in deployed envs. */
   DATABASE_URL: z.url(),
+  REDIS_URL: z.url().default('redis://127.0.0.1:6379'),
+  /** Public base URL of the web app (used in email links). */
+  APP_URL: z.url().default('http://localhost:5173'),
+  /** Root directory for uploaded files and generated reports. */
+  FILES_DIR: z.string().min(1).default('./.data/files'),
+  /** SMTP relay. When SMTP_HOST is unset, emails are logged instead of sent. */
+  SMTP_HOST: optional(z.string().min(1).optional()),
+  SMTP_PORT: optional(z.coerce.number().int().positive().default(587)),
+  SMTP_USER: optional(z.string().min(1).optional()),
+  SMTP_PASS: optional(z.string().min(1).optional()),
+  MAIL_FROM: optional(z.string().min(1).default('Carbon Glint <no-reply@carbon-glint.local>')),
   GEMINI_API_KEY: optional(z.string().min(1).optional()),
   GEMINI_MODEL: optional(z.string().min(1).default('gemini-2.5-flash')),
   /** Comma-separated list of allowed origins. Empty = same-origin only (Firebase Hosting rewrite). */

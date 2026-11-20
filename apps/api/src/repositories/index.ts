@@ -1,10 +1,11 @@
-import type { Database } from '../db/client.js';
-import { createSystemRepository, type SystemRepository } from './system.repository.js';
+import { createSystemRepository, type DataStores, type SystemRepository } from './system.repository.js';
+
+export type { DataStores };
 
 export interface Repositories {
   system: SystemRepository;
 }
 
-export const createRepositories = (db: Database): Repositories => ({
-  system: createSystemRepository(db),
+export const createRepositories = (stores: DataStores): Repositories => ({
+  system: createSystemRepository(stores),
 });

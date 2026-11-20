@@ -61,9 +61,11 @@ components:
         checks:
           type: object
           additionalProperties: false
-          required: [database]
+          required: [database, redis]
           properties:
             database:
+              $ref: '#/components/schemas/DependencyStatus'
+            redis:
               $ref: '#/components/schemas/DependencyStatus'
     DependencyStatus:
       type: string

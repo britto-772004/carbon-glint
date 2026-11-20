@@ -11,12 +11,13 @@ export interface HealthService {
 
 export const createHealthService = ({ repositories, config }: ServiceDeps): HealthService => ({
   async getHealth() {
-    const dbUp = await repositories.system.ping();
+    const [dbUp, redisUp] = await Promise.all([repositories.system.pingDatabase(), repositories.system.pingRedis()]);
+    const status = (up: boolean) => (up ? 'up' : 'down') as const;
     return {
-      status: dbUp ? 'ok' : 'degraded',
+      status: dbUp && redisUp ? 'ok' : 'degraded',
       version: config.APP_VERSION,
       uptimeSeconds: Math.floor(process.uptime()),
-      checks: { database: dbUp ? 'up' : 'down' },
+      checks: { database: status(dbUp), redis: status(redisUp) },
     };
   },
 });
