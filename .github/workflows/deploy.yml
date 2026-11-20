@@ -15,12 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
-
   deploy:
-    name: Build release and deploy to VM
-    needs: ci
+    name: Build and deploy API + web to VM
     runs-on: ubuntu-24.04 # same Ubuntu/glibc as the VM image, so native modules match
     environment: production
     env:
