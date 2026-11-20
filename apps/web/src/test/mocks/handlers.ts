@@ -44,6 +44,28 @@ export const handlers = [
   http.get(apiUrl('/users'), () => HttpResponse.json<User[]>([buildUser()])),
   http.get(apiUrl('/invitations'), () => HttpResponse.json<Invitation[]>([buildInvitation()])),
   http.get(apiUrl('/org-units'), () => HttpResponse.json<OrgUnit[]>(ORG_UNITS)),
+  http.get(apiUrl('/emissions/summary'), () =>
+    HttpResponse.json({
+      co2eKg: { '1': 0, '2': 0, '3': 0, total: 0 },
+      activityCount: 0,
+      needsReview: 0,
+      unmatched: 0,
+      overridden: 0,
+      orgUnitsWithData: 0,
+      orgUnitCount: 3,
+    }),
+  ),
+  http.get(apiUrl('/emissions/heatmap'), ({ request }) =>
+    HttpResponse.json({
+      groupBy: new URL(request.url).searchParams.get('groupBy') ?? 'scope',
+      columns: [],
+      rows: [],
+      columnTotals: [],
+      total: 0,
+    }),
+  ),
+  http.get(apiUrl('/emissions/org-tree'), () => HttpResponse.json([])),
+  http.get(apiUrl('/emission-factors/sources'), () => HttpResponse.json([])),
   http.get(apiUrl('/ghg-categories'), () => HttpResponse.json<GhgCategory[]>(CATEGORIES)),
   http.get(apiUrl('/activity-definitions'), ({ request }) => {
     const scope = new URL(request.url).searchParams.get('scope');

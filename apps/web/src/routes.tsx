@@ -8,6 +8,7 @@ import { SignUpContainer } from './containers/auth/SignUpContainer';
 import { VerifyEmailContainer } from './containers/auth/VerifyEmailContainer';
 import { ActivityDefinitionDetailContainer } from './containers/activity-definitions/ActivityDefinitionDetailContainer';
 import { ActivityDefinitionsContainer } from './containers/activity-definitions/ActivityDefinitionsContainer';
+import { DashboardContainer } from './containers/dashboard/DashboardContainer';
 import { EmissionFactorsContainer } from './containers/emissions/EmissionFactorsContainer';
 import { OrgUnitsContainer } from './containers/org-units/OrgUnitsContainer';
 import { OnboardingContainer } from './containers/onboarding/OnboardingContainer';
@@ -44,7 +45,7 @@ export const routes: RouteObject[] = [
         element: <ShellContainer variant="tenant" />,
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
-          { path: 'dashboard', element: soon('Dashboard', 'Your emissions overview will appear here.') },
+          { path: 'dashboard', element: <DashboardContainer /> },
           { path: 'org-units', element: <OrgUnitsContainer /> },
           { path: 'activity-definitions', element: <ActivityDefinitionsContainer /> },
           { path: 'activity-definitions/:activityDefinitionId', element: <ActivityDefinitionDetailContainer /> },
