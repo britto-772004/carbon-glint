@@ -57,7 +57,11 @@ log "Activating release"
 ln -sfn "$RELEASE_DIR" "$APP_DIR/current"
 
 sudo install -m 644 "$RELEASE_DIR/Caddyfile" /etc/caddy/Caddyfile
-sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
+# Validate as the caddy user: validating as root creates /var/log/caddy/access.log owned by root,
+# which the caddy service then can't open (reload fails with "opening log writer").
+sudo install -d -o caddy -g caddy /var/log/caddy
+sudo chown -R caddy:caddy /var/log/caddy
+sudo -u caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 sudo systemctl reload caddy
 
 # pm2 pins a process's cwd at start, so replace the processes instead of reloading them (~1-2 s blip).
