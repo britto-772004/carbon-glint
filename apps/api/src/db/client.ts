@@ -3,6 +3,10 @@ import pg from 'pg';
 import * as models from '../models/index.js';
 
 export type Database = NodePgDatabase<typeof models>;
+/** A transaction handle — same query API as Database. */
+export type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+/** What repositories run queries on: the pool or an open transaction. */
+export type DbExecutor = Database | Transaction;
 
 export interface DatabaseHandle {
   db: Database;
@@ -17,5 +21,5 @@ export function createDatabase(connectionString: string): DatabaseHandle {
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
   });
-  return { db: drizzle(pool, { schema: models }), close: () => pool.end() };
+  return { db: drizzle(pool, { schema: models, casing: 'snake_case' }), close: () => pool.end() };
 }

@@ -33,15 +33,24 @@ const EnvSchema = z.object({
         .map((s) => s.trim())
         .filter(Boolean),
     ),
+  /** Key for hashing session/verification/invite tokens. Must be set (64+ chars) in production. */
+  SESSION_SECRET: optional(z.string().min(16).default('dev-only-insecure-session-secret')),
   APP_VERSION: optional(z.string().default(process.env.npm_package_version ?? '0.0.0')),
 });
 
 export type Config = z.infer<typeof EnvSchema>;
+
+const assertProductionSafe = (c: Config) => {
+  if (c.NODE_ENV === 'production' && c.SESSION_SECRET.startsWith('dev-only')) {
+    throw new Error('Invalid environment configuration:\n✖ SESSION_SECRET must be set in production');
+  }
+  return c;
+};
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = EnvSchema.safeParse(env);
   if (!parsed.success) {
     throw new Error(`Invalid environment configuration:\n${z.prettifyError(parsed.error)}`);
   }
-  return parsed.data;
+  return assertProductionSafe(parsed.data);
 }

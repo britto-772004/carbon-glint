@@ -14,19 +14,18 @@ export const testConfig = (env: Record<string, string> = {}): Config =>
     NODE_ENV: 'test', // response validation is ON outside production
     LOG_LEVEL: 'silent',
     DATABASE_URL: 'postgres://test:test@localhost:5432/unused',
+    APP_URL: 'http://app.test',
     APP_VERSION: '0.0.0-test',
     ...env,
   });
 
 /** Real services wired to fake (or provided) repositories — for service unit tests. */
-export function createTestServices(overrides: Partial<ServiceDeps> = {}) {
-  const deps: ServiceDeps = {
-    repositories: fakeRepositories(),
-    ai: fakeAi(),
-    jobs: fakeJobQueue(),
-    config: testConfig(),
-    ...overrides,
-  };
+export function createTestServices(
+  overrides: Partial<Omit<ServiceDeps, 'jobs'>> & { jobs?: ReturnType<typeof fakeJobQueue> } = {},
+) {
+  const jobs = overrides.jobs ?? fakeJobQueue();
+  const repositories = (overrides.repositories ?? fakeRepositories()) as ReturnType<typeof fakeRepositories>;
+  const deps = { ai: fakeAi(), config: testConfig(), ...overrides, repositories, jobs };
   return { services: createServices(deps), ...deps };
 }
 
@@ -35,6 +34,7 @@ interface TestAppOptions {
   /** Swap the data layer (fakes by default, or real repos in integration tests). */
   repositories?: Repositories;
   ai?: AiClient;
+  jobs?: ReturnType<typeof fakeJobQueue>;
   /** Replace individual services, e.g. to force a DomainError. */
   services?: Partial<Services>;
   /** Replace individual controllers (rarely needed — contract tests). */
@@ -51,15 +51,17 @@ export function createTestApp(opts: TestAppOptions = {}) {
     services: realServices,
     repositories,
     ai,
+    jobs,
   } = createTestServices({
     config,
     ...(opts.repositories ? { repositories: opts.repositories } : {}),
     ...(opts.ai ? { ai: opts.ai } : {}),
+    ...(opts.jobs ? { jobs: opts.jobs } : {}),
   });
   const services: Services = { ...realServices, ...opts.services };
   const app = createApp(
     { config, logger: createLogger(config), services },
     { ...createControllers(services), ...opts.controllers },
   );
-  return { app, api: request(app), services, repositories, ai };
+  return { app, api: request(app), agent: () => request.agent(app), services, repositories, ai, jobs };
 }

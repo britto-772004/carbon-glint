@@ -18,6 +18,18 @@ servers:
 tags:
   - name: system
     description: Operational endpoints
+  - name: auth
+    description: Sign-up, verification, sessions and passwords
+  - name: tenant
+    description: The signed-in company (tenant) and onboarding
+  - name: users
+    description: Colleagues and invitations inside a tenant
+  - name: platform
+    description: Global super-admin console across all tenants
+  - name: reference
+    description: Reference data (industries, …)
+# Default: public. Protected operations declare `security` explicitly.
+# cookieAuth "scopes" are roles: [] = any signed-in user, [admin] = tenant admin, [superadmin] = platform operator.
 security: []
 paths:
   /health:
@@ -35,8 +47,546 @@ paths:
                 $ref: '#/components/schemas/Health'
         default:
           $ref: '#/components/responses/Error'
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      summary: Sign up with a work email
+      description: Creates an unverified account and emails a verification link. The first verified user of a domain creates the company (tenant).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      summary: Verify an email address and sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Session'
+        '400':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/resend-verification:
+    post:
+      operationId: resendVerification
+      tags: [auth]
+      summary: Re-send the verification email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/login:
+    post:
+      operationId: logIn
+      tags: [auth]
+      summary: Sign in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogInRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Session'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/logout:
+    post:
+      operationId: logOut
+      tags: [auth]
+      summary: Sign out (ends the current session)
+      responses:
+        '204':
+          description: Signed out
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Email a new password
+      description: Always returns 202 so it can't be used to discover accounts. If the account exists, a new random password is emailed and all sessions are revoked.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/change-password:
+    post:
+      operationId: changePassword
+      tags: [auth]
+      summary: Change the signed-in user's password
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed
+        '401':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: The signed-in user and their company
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /industries:
+    get:
+      operationId: listIndustries
+      tags: [reference]
+      summary: Industries (for onboarding)
+      responses:
+        '200':
+          description: Industries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Industry'
+        default:
+          $ref: '#/components/responses/Error'
+  /tenant:
+    get:
+      operationId: getTenant
+      tags: [tenant]
+      summary: The signed-in company
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        default:
+          $ref: '#/components/responses/Error'
+  /tenant/onboarding:
+    put:
+      operationId: completeOnboarding
+      tags: [tenant]
+      summary: Save onboarding answers (first sign-in)
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingRequest'
+      responses:
+        '200':
+          description: Onboarded tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: Colleagues in this company
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Error'
+  /users/{userId}:
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Enable or disable a colleague
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserStatusRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /invitations:
+    get:
+      operationId: listInvitations
+      tags: [users]
+      summary: Pending invitations
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invitation'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createInvitation
+      tags: [users]
+      summary: Invite a colleague by email
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '201':
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /invitations/{invitationId}:
+    delete:
+      operationId: revokeInvitation
+      tags: [users]
+      summary: Revoke a pending invitation
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '204':
+          description: Revoked
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /invitations/{invitationId}/resend:
+    post:
+      operationId: resendInvitation
+      tags: [users]
+      summary: Re-send an invitation email (new link, new expiry)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '200':
+          description: Invitation re-sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /invitations/lookup:
+    post:
+      operationId: lookupInvitation
+      tags: [users]
+      summary: Who an invitation link is for (public)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Invitation preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationPreview'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /invitations/accept:
+    post:
+      operationId: acceptInvitation
+      tags: [users]
+      summary: Accept an invitation, set a password and sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Session'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /platform/tenants:
+    get:
+      operationId: listPlatformTenants
+      tags: [platform]
+      summary: All companies (super admin)
+      security:
+        - cookieAuth: [superadmin]
+      parameters:
+        - name: q
+          in: query
+          description: Search by name or domain
+          schema:
+            type: string
+            maxLength: 100
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TenantStatus'
+      responses:
+        '200':
+          description: Tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantSummary'
+        default:
+          $ref: '#/components/responses/Error'
+  /platform/tenants/{tenantId}:
+    get:
+      operationId: getPlatformTenant
+      tags: [platform]
+      summary: One company with its users (super admin)
+      security:
+        - cookieAuth: [superadmin]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Tenant detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDetail'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      operationId: updatePlatformTenant
+      tags: [platform]
+      summary: Enable or disable a company (super admin)
+      security:
+        - cookieAuth: [superadmin]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTenantStatusRequest'
+      responses:
+        '200':
+          description: Updated tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantSummary'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /platform/users/{userId}:
+    patch:
+      operationId: updatePlatformUser
+      tags: [platform]
+      summary: Enable or disable any user (super admin)
+      security:
+        - cookieAuth: [superadmin]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserStatusRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /platform/users/{userId}/resend-verification:
+    post:
+      operationId: platformResendVerification
+      tags: [platform]
+      summary: Re-send a user's verification email (super admin)
+      security:
+        - cookieAuth: [superadmin]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: cg_session
+      description: httpOnly session cookie set by logIn / verifyEmail / acceptInvitation.
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TenantId:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
+    Accepted:
+      description: Accepted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
+    Session:
+      description: Signed in. Sets the `cg_session` cookie.
+      headers:
+        Set-Cookie:
+          description: Session cookie
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Me'
     Error:
       description: Error response
       content:
@@ -44,6 +594,296 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    Message:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+    Email:
+      type: string
+      format: email
+      maxLength: 254
+    Password:
+      type: string
+      minLength: 10
+      maxLength: 128
+      description: At least 10 characters, with a letter and a number.
+    SignUpRequest:
+      type: object
+      additionalProperties: false
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/Password'
+    LogInRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+    EmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+    TokenRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 20
+          maxLength: 200
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+          maxLength: 128
+        newPassword:
+          $ref: '#/components/schemas/Password'
+    AcceptInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [token, name, password]
+      properties:
+        token:
+          type: string
+          minLength: 20
+          maxLength: 200
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        password:
+          $ref: '#/components/schemas/Password'
+    Role:
+      type: string
+      enum: [superadmin, admin]
+    UserStatus:
+      type: string
+      enum: [pending, active, disabled]
+    TenantStatus:
+      type: string
+      enum: [active, disabled]
+    EmployeeBand:
+      type: string
+      enum: ['1-50', '51-250', '251-1000', '1001-5000', '5000+']
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, email, name, role, status, emailVerified, passwordIsTemporary, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          $ref: '#/components/schemas/Email'
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        emailVerified:
+          type: boolean
+        passwordIsTemporary:
+          type: boolean
+          description: True after "forgot password" until the user changes it.
+        lastLoginAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    Industry:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+    Tenant:
+      type: object
+      additionalProperties: false
+      required: [id, name, emailDomain, status, onboarded, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        emailDomain:
+          type: string
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+        onboarded:
+          type: boolean
+        industry:
+          oneOf:
+            - $ref: '#/components/schemas/Industry'
+            - type: 'null'
+        employeeBand:
+          oneOf:
+            - $ref: '#/components/schemas/EmployeeBand'
+            - type: 'null'
+        businessUnitCount:
+          type: [integer, 'null']
+        website:
+          type: [string, 'null']
+        linkedinUrl:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+    TenantSummary:
+      type: object
+      additionalProperties: false
+      required: [id, name, emailDomain, status, onboarded, userCount, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        emailDomain:
+          type: string
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+        onboarded:
+          type: boolean
+        industryName:
+          type: [string, 'null']
+        employeeBand:
+          oneOf:
+            - $ref: '#/components/schemas/EmployeeBand'
+            - type: 'null'
+        businessUnitCount:
+          type: [integer, 'null']
+        userCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+    TenantDetail:
+      type: object
+      additionalProperties: false
+      required: [tenant, users]
+      properties:
+        tenant:
+          $ref: '#/components/schemas/Tenant'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    Me:
+      type: object
+      additionalProperties: false
+      required: [user]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        tenant:
+          description: Null for the global super admin.
+          oneOf:
+            - $ref: '#/components/schemas/Tenant'
+            - type: 'null'
+    OnboardingRequest:
+      type: object
+      additionalProperties: false
+      required: [companyName, industryId, employeeBand, businessUnitCount, website, linkedinUrl]
+      properties:
+        companyName:
+          type: string
+          minLength: 1
+          maxLength: 160
+        industryId:
+          type: string
+          format: uuid
+        employeeBand:
+          $ref: '#/components/schemas/EmployeeBand'
+        businessUnitCount:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        website:
+          type: string
+          format: uri
+          maxLength: 300
+          pattern: '^https?://'
+        linkedinUrl:
+          type: string
+          format: uri
+          maxLength: 300
+          pattern: '^https://([a-z]{2,3}\.)?linkedin\.com/company/[^/]+/?.*$'
+    Invitation:
+      type: object
+      additionalProperties: false
+      required: [id, email, status, expiresAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          $ref: '#/components/schemas/Email'
+        status:
+          type: string
+          enum: [pending, accepted, revoked, expired]
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    InvitationPreview:
+      type: object
+      additionalProperties: false
+      required: [email, tenantName]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        tenantName:
+          type: string
+    UpdateUserStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [active, disabled]
+    UpdateTenantStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/TenantStatus'
     Health:
       type: object
       additionalProperties: false

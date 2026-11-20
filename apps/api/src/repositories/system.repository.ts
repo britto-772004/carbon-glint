@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { Database } from '../db/client.js';
-import type { Redis } from '../lib/redis.js';
+import type { DataStores } from './index.js';
 
 /** REPOSITORY — data access only. Takes and returns models/primitives; no DTOs, no HTTP, no business rules. */
 export interface SystemRepository {
@@ -25,8 +24,3 @@ export const createSystemRepository = ({ db, redis }: DataStores): SystemReposit
     }
   },
 });
-
-export interface DataStores {
-  db: Database;
-  redis: Redis;
-}

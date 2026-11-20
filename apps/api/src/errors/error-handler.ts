@@ -7,6 +7,7 @@ import {
   DomainError,
   ForbiddenError,
   NotFoundError,
+  TooManyRequestsError,
   UnauthorizedError,
   UpstreamError,
 } from './domain-errors.js';
@@ -20,6 +21,7 @@ const DOMAIN_STATUS = new Map<abstract new (...args: never[]) => DomainError, nu
   [UnauthorizedError, 401],
   [ForbiddenError, 403],
   [BusinessRuleError, 422],
+  [TooManyRequestsError, 429],
   [UpstreamError, 502],
 ]);
 
@@ -42,6 +44,8 @@ const codeForStatus = (status: number): string =>
     403: 'FORBIDDEN',
     404: 'NOT_FOUND',
     405: 'METHOD_NOT_ALLOWED',
+    409: 'CONFLICT',
+    429: 'RATE_LIMITED',
     413: 'PAYLOAD_TOO_LARGE',
     415: 'UNSUPPORTED_MEDIA_TYPE',
   })[status] ?? (status >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR');
