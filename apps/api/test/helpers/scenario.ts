@@ -41,3 +41,21 @@ export async function signedInSuperAdmin(t: TestApp, store: MemoryStore): Promis
   await agent.post('/api/auth/login').send({ email: 'ops@carbonglint.app', password: PASSWORD }).expect(200);
   return agent;
 }
+
+/** Signed-in admin whose company has finished onboarding (so an HQ org unit exists). */
+export async function onboardedAdmin(t: TestApp, email = 'asha@acme.com') {
+  const s = await signedInAdmin(t, email);
+  const industries = (await t.api.get('/api/industries').expect(200)).body as Array<{ id: string }>;
+  await s.agent
+    .put('/api/tenant/onboarding')
+    .send({
+      companyName: 'Acme',
+      industryId: industries[0]!.id,
+      employeeBand: '51-250',
+      businessUnitCount: 3,
+      website: 'https://acme.com',
+      linkedinUrl: 'https://www.linkedin.com/company/acme',
+    })
+    .expect(200);
+  return s;
+}

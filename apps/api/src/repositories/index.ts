@@ -3,6 +3,7 @@ import type { Redis } from '../lib/redis.js';
 import { createAuthTokenRepository, type AuthTokenRepository } from './auth-token.repository.js';
 import { createIndustryRepository, type IndustryRepository } from './industry.repository.js';
 import { createInvitationRepository, type InvitationRepository } from './invitation.repository.js';
+import { createOrgUnitRepository, type OrgUnitRepository } from './org-unit.repository.js';
 import { createRateLimitRepository, type RateLimitRepository } from './rate-limit.repository.js';
 import { createSessionRepository, type SessionRepository } from './session.repository.js';
 import { createSystemRepository, type SystemRepository } from './system.repository.js';
@@ -21,6 +22,7 @@ export interface Repositories {
   users: UserRepository;
   authTokens: AuthTokenRepository;
   invitations: InvitationRepository;
+  orgUnits: OrgUnitRepository;
   sessions: SessionRepository;
   rateLimits: RateLimitRepository;
   /** Run `fn` in one database transaction; the repositories passed to it all use that transaction. */
@@ -34,6 +36,7 @@ const build = (db: DbExecutor, stores: DataStores): Repositories => ({
   users: createUserRepository(db),
   authTokens: createAuthTokenRepository(db),
   invitations: createInvitationRepository(db),
+  orgUnits: createOrgUnitRepository(db),
   sessions: createSessionRepository(stores.redis),
   rateLimits: createRateLimitRepository(stores.redis),
   transaction: (fn) => stores.db.transaction((tx) => fn(build(tx, stores))),

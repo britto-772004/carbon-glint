@@ -3,6 +3,7 @@ import type { Controllers } from '../openapi/types.js';
 import { createAuthControllers } from './auth.controller.js';
 import { getHealth } from './health.controller.js';
 import type { ControllerOptions } from './http.js';
+import { createOrgUnitControllers } from './org-unit.controller.js';
 import { createPlatformControllers } from './platform.controller.js';
 import { createTeamControllers } from './team.controller.js';
 import { createTenantControllers } from './tenant.controller.js';
@@ -17,4 +18,5 @@ export const createControllers = (
   ...createTenantControllers(services),
   ...createTeamControllers(services, opts),
   ...createPlatformControllers(services),
+  ...createOrgUnitControllers(services),
 });

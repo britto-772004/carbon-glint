@@ -28,6 +28,8 @@ tags:
     description: Global super-admin console across all tenants
   - name: reference
     description: Reference data (industries, …)
+  - name: org-units
+    description: Business units (branches, plants, campuses) as a tree
 # Default: public. Protected operations declare `security` explicitly.
 # cookieAuth "scopes" are roles: [] = any signed-in user, [admin] = tenant admin, [superadmin] = platform operator.
 security: []
@@ -540,6 +542,97 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /org-units:
+    get:
+      operationId: listOrgUnits
+      tags: [org-units]
+      summary: All business units of the company (flat list; build the tree with parentId)
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Org units
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrgUnit'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createOrgUnit
+      tags: [org-units]
+      summary: Create a business unit (root or child)
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrgUnitRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /org-units/{orgUnitId}:
+    patch:
+      operationId: updateOrgUnit
+      tags: [org-units]
+      summary: Update or re-parent a business unit
+      description: Set `parentId` to move the unit (and its subtree). Moving a unit under itself or its descendants is rejected.
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/OrgUnitId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrgUnitRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: deleteOrgUnit
+      tags: [org-units]
+      summary: Delete a business unit with no children
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/OrgUnitId'
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     cookieAuth:
@@ -548,6 +641,13 @@ components:
       name: cg_session
       description: httpOnly session cookie set by logIn / verifyEmail / acceptInvitation.
   parameters:
+    OrgUnitId:
+      name: orgUnitId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     UserId:
       name: userId
       in: path
@@ -594,6 +694,103 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    OrgUnitType:
+      type: string
+      enum: [hq, branch, plant, office, warehouse, campus, store, other]
+    CountryCode:
+      type: string
+      pattern: '^[A-Z]{2}$'
+      description: ISO 3166-1 alpha-2
+    OrgUnit:
+      type: object
+      additionalProperties: false
+      required: [id, parentId, name, code, type, country, city, address, active, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: [string, 'null']
+          format: uuid
+        name:
+          type: string
+        code:
+          type: string
+        type:
+          $ref: '#/components/schemas/OrgUnitType'
+        country:
+          oneOf:
+            - $ref: '#/components/schemas/CountryCode'
+            - type: 'null'
+        city:
+          type: [string, 'null']
+        address:
+          type: [string, 'null']
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    CreateOrgUnitRequest:
+      type: object
+      additionalProperties: false
+      required: [name, code, type]
+      properties:
+        parentId:
+          type: [string, 'null']
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: '^[A-Za-z0-9][A-Za-z0-9_.-]*$'
+        type:
+          $ref: '#/components/schemas/OrgUnitType'
+        country:
+          oneOf:
+            - $ref: '#/components/schemas/CountryCode'
+            - type: 'null'
+        city:
+          type: [string, 'null']
+          maxLength: 120
+        address:
+          type: [string, 'null']
+          maxLength: 300
+    UpdateOrgUnitRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        parentId:
+          type: [string, 'null']
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: '^[A-Za-z0-9][A-Za-z0-9_.-]*$'
+        type:
+          $ref: '#/components/schemas/OrgUnitType'
+        country:
+          oneOf:
+            - $ref: '#/components/schemas/CountryCode'
+            - type: 'null'
+        city:
+          type: [string, 'null']
+          maxLength: 120
+        address:
+          type: [string, 'null']
+          maxLength: 300
+        active:
+          type: boolean
     Message:
       type: object
       additionalProperties: false

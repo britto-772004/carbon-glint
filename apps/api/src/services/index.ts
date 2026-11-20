@@ -4,6 +4,7 @@ import type { JobQueue } from '../jobs/types.js';
 import type { Repositories } from '../repositories/index.js';
 import { createAuthService, type AuthService } from './auth.service.js';
 import { createHealthService, type HealthService } from './health.service.js';
+import { createOrgUnitService, type OrgUnitService } from './org-unit.service.js';
 import { createPlatformService, type PlatformService } from './platform.service.js';
 import { createTeamService, type TeamService } from './team.service.js';
 import { createTenantService, type TenantService } from './tenant.service.js';
@@ -22,6 +23,7 @@ export interface Services {
   tenant: TenantService;
   team: TeamService;
   platform: PlatformService;
+  orgUnits: OrgUnitService;
 }
 
 export const createServices = (deps: ServiceDeps): Services => {
@@ -32,5 +34,6 @@ export const createServices = (deps: ServiceDeps): Services => {
     tenant: createTenantService(deps),
     team: createTeamService(deps),
     platform: createPlatformService(deps, auth),
+    orgUnits: createOrgUnitService(deps),
   };
 };

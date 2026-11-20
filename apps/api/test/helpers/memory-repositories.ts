@@ -4,7 +4,9 @@ import type {
   AuthTokenModel,
   IndustryModel,
   InvitationModel,
+  NewOrgUnitModel,
   NewTenantModel,
+  OrgUnitModel,
   NewUserModel,
   TenantModel,
   UserModel,
@@ -22,6 +24,7 @@ export interface MemoryStore {
   users: UserModel[];
   authTokens: AuthTokenModel[];
   invitations: InvitationModel[];
+  orgUnits: OrgUnitModel[];
   sessions: Map<string, { record: SessionRecord; expiresAt: number }>;
   rateCounters: Map<string, { count: number; resetAt: number }>;
 }
@@ -38,6 +41,7 @@ export function createMemoryStore(): MemoryStore {
     users: [],
     authTokens: [],
     invitations: [],
+    orgUnits: [],
     sessions: new Map(),
     rateCounters: new Map(),
   };
@@ -172,6 +176,42 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
         Object.assign(row, data);
         return row;
       },
+    },
+
+    orgUnits: {
+      listByTenant: async (tenantId) => store.orgUnits.filter((o) => o.tenantId === tenantId),
+      findById: async (tenantId, id) => store.orgUnits.find((o) => o.tenantId === tenantId && o.id === id) ?? null,
+      findByCode: async (tenantId, code) =>
+        store.orgUnits.find((o) => o.tenantId === tenantId && o.code === code) ?? null,
+      async create(data: NewOrgUnitModel) {
+        const row: OrgUnitModel = {
+          id: randomUUID(),
+          parentId: null,
+          type: 'branch',
+          country: null,
+          city: null,
+          address: null,
+          active: true,
+          createdAt: now(),
+          updatedAt: now(),
+          ...data,
+        } as OrgUnitModel;
+        store.orgUnits.push(row);
+        return row;
+      },
+      async update(tenantId, id, data) {
+        const row = store.orgUnits.find((o) => o.tenantId === tenantId && o.id === id);
+        if (!row) return null;
+        Object.assign(row, data, { updatedAt: now() });
+        return row;
+      },
+      async delete(tenantId, id) {
+        const before = store.orgUnits.length;
+        store.orgUnits = store.orgUnits.filter((o) => !(o.tenantId === tenantId && o.id === id));
+        return store.orgUnits.length < before;
+      },
+      countChildren: async (tenantId, id) =>
+        store.orgUnits.filter((o) => o.tenantId === tenantId && o.parentId === id).length,
     },
 
     sessions: {

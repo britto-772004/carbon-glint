@@ -1,6 +1,7 @@
 import type { Schemas } from '@carbon-glint/api-spec';
 import { BusinessRuleError, ConflictError, ForbiddenError, NotFoundError } from '../errors/domain-errors.js';
 import type { ServiceDeps } from './index.js';
+import { ensureHeadquarters } from './org-unit.service.js';
 import { toIndustryDto, toTenantDto } from './mappers.js';
 import type { Actor } from './types.js';
 
@@ -47,6 +48,7 @@ export const createTenantService = ({ repositories: repos }: ServiceDeps): Tenan
         linkedinUrl: input.linkedinUrl,
         onboardedAt: new Date(),
       });
+      await ensureHeadquarters(tx, tenantId, updated!.name);
       return toTenantDto(updated!, industry);
     });
   },

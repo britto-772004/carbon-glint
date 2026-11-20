@@ -1,5 +1,5 @@
 import type { Schemas } from '@carbon-glint/api-spec';
-import type { IndustryModel, InvitationModel, TenantModel, UserModel } from '../models/index.js';
+import type { IndustryModel, InvitationModel, OrgUnitModel, TenantModel, UserModel } from '../models/index.js';
 import type { TenantSummaryRow } from '../repositories/tenant.repository.js';
 
 /** Model → DTO (spec shape). The only place DB rows become API responses. */
@@ -56,4 +56,17 @@ export const toInvitationDto = (i: InvitationModel): Schemas['Invitation'] => ({
   status: invitationStatus(i),
   expiresAt: iso(i.expiresAt),
   createdAt: iso(i.createdAt),
+});
+
+export const toOrgUnitDto = (o: OrgUnitModel): Schemas['OrgUnit'] => ({
+  id: o.id,
+  parentId: o.parentId,
+  name: o.name,
+  code: o.code,
+  type: o.type,
+  country: o.country,
+  city: o.city,
+  address: o.address,
+  active: o.active,
+  createdAt: iso(o.createdAt),
 });
