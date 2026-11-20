@@ -1,10 +1,16 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { createElement } from 'react';
+import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { configureSdk } from '@carbon-glint/sdk';
 import { server } from './mocks/server';
 import { resetSession } from './mocks/session';
 import { TEST_API_BASE_URL } from './constants';
+
+// ECharts needs a real canvas; tests use the accessible table views instead.
+vi.mock('echarts-for-react', () => ({
+  default: (props: { style?: object }) => createElement('div', { 'data-testid': 'echarts', style: props.style }),
+}));
 
 // jsdom lacks these; React Flow needs them.
 class ResizeObserverStub {
