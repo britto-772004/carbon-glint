@@ -150,9 +150,6 @@ export function EmissionFactorSources(p: EmissionFactorSourcesProps) {
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {s.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {s.code}
-                        </Typography>
                       </TableCell>
                       <TableCell>{s.publisher}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>

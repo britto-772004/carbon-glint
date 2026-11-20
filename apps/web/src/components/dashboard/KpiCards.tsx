@@ -29,7 +29,7 @@ function Kpi({
           ? {
               color: 'common.white',
               border: 0,
-              background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 60%, #65a30d 130%)',
+              bgcolor: 'primary.main',
             }
           : { borderLeft: 4, borderLeftColor: accent ?? 'primary.main' }),
       }}

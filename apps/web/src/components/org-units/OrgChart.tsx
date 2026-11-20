@@ -34,7 +34,7 @@ export function OrgChart({ nodes, edges, onNodesChange, onNodeDrag, onNodeDragSt
         onNodeDragStop={(_, node) => onNodeDragStop(node)}
         nodesConnectable={false}
         fitView
-        fitViewOptions={{ padding: 0.35, maxZoom: 0.75 }}
+        fitViewOptions={{ padding: 0.2, minZoom: 0.5, maxZoom: 1 }}
         minZoom={0.2}
         proOptions={{ hideAttribution: true }}
       >

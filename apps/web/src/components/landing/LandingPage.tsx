@@ -311,8 +311,7 @@ export function LandingPage({ isSignedIn, appPath }: LandingPageProps) {
         <Box
           component="section"
           sx={{
-            background: (t) =>
-              `radial-gradient(900px 480px at 85% 0%, ${tint(0.12)(t)}, transparent 70%), radial-gradient(700px 400px at 0% 100%, ${t.alpha(t.palette.secondary.main, 0.1)}, transparent 70%)`,
+            bgcolor: (t) => tint(0.06)(t),
           }}
         >
           <Container maxWidth="lg" sx={{ py: { xs: 7, md: 12 } }}>
@@ -474,8 +473,7 @@ export function LandingPage({ isSignedIn, appPath }: LandingPageProps) {
           aria-label="Coverage"
           sx={{
             color: 'primary.contrastText',
-            background: (t) =>
-              `linear-gradient(135deg, ${(t.vars ?? t).palette.primary.dark}, ${(t.vars ?? t).palette.primary.main})`,
+            bgcolor: 'primary.dark',
           }}
         >
           <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
@@ -647,8 +645,7 @@ export function LandingPage({ isSignedIn, appPath }: LandingPageProps) {
                 alignItems: { md: 'center' },
                 justifyContent: 'space-between',
                 color: 'primary.contrastText',
-                background: (t) =>
-                  `linear-gradient(135deg, ${(t.vars ?? t).palette.primary.dark}, ${(t.vars ?? t).palette.primary.main} 60%, ${(t.vars ?? t).palette.secondary.main})`,
+                bgcolor: 'primary.dark',
               }}
             >
               <Box>

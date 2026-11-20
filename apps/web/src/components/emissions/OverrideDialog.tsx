@@ -89,7 +89,7 @@ export function OverrideDialog(p: OverrideDialogProps) {
                   >
                     <ListItemText
                       primary={h.factor.name}
-                      secondary={`${h.factor.co2ePerUnit} kg CO₂e/${h.factor.unit} · ${h.factor.sourceCode} · ${h.factor.category} · ${h.factor.region}`}
+                      secondary={`${h.factor.co2ePerUnit} kg CO₂e/${h.factor.unit} · ${h.factor.category} · ${h.factor.region}`}
                     />
                   </ListItemButton>
                 ))}

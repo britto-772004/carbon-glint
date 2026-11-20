@@ -64,7 +64,7 @@ export function EmissionsTable({ data, isLoading, page, rowsPerPage, onPageChang
                         {r.factor.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {r.factor.sourceCode} · {r.factor.co2ePerUnit} kg/{r.factor.unit} · {r.factor.region}
+                        {r.factor.co2ePerUnit} kg/{r.factor.unit} · {r.factor.region}
                       </Typography>
                     </>
                   ) : (

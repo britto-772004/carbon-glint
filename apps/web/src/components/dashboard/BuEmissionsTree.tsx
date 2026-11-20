@@ -44,7 +44,7 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
         boxShadow: selected ? 6 : 1,
         transition: 'box-shadow 150ms ease, transform 150ms ease',
         '&:hover': { boxShadow: 4, transform: 'translateY(-1px)' },
-        background: node.parentId ? undefined : 'linear-gradient(135deg, rgba(20,184,166,0.10), rgba(101,163,13,0.06))',
+        bgcolor: node.parentId ? undefined : 'action.hover',
       }}
     >
       <Handle type="target" position={Position.Top} isConnectable={false} />

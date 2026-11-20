@@ -31,7 +31,7 @@ export function EmissionFactorsPage(p: EmissionFactorsPageProps) {
             <Chip
               key={s.id}
               variant="outlined"
-              label={`${s.code} · ${s.factorCount.toLocaleString()} factors`}
+              label={`${s.publisher} ${s.year} · ${s.factorCount.toLocaleString()} factors`}
               title={`${s.name} — ${s.licence}`}
             />
           ))

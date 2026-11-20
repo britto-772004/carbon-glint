@@ -24,7 +24,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
           justifyContent: 'space-between',
           p: 6,
           color: 'common.white',
-          background: 'linear-gradient(135deg, #0f766e 0%, #115e59 55%, #3f6212 100%)',
+          bgcolor: 'primary.dark',
         }}
       >
         <BrandMark inverted />

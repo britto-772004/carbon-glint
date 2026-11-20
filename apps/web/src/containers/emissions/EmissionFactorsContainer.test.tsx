@@ -78,7 +78,7 @@ describe('Emission Factors tab', () => {
       }),
     );
     const { user } = renderApp('/app/emission-factors');
-    expect(await screen.findByText('DEFRA_2026 · 2,622 factors')).toBeInTheDocument();
+    expect(await screen.findByText('DESNZ 2026 · 2,622 factors')).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: 'View as table' }));
     const table = await screen.findByRole('table', { name: 'Heatmap data' });
     expect(within(table).getByText('Scope 2')).toBeInTheDocument();
