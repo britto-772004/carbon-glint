@@ -57,14 +57,21 @@ export function monthShares(periodStart: string, periodEnd: string): Array<[stri
     const d = new Date(cursor);
     const monthEnd = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0);
     const segEnd = Math.min(monthEnd, end);
-    out.push([`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`, ((segEnd - cursor) / DAY + 1) / totalDays]);
+    out.push([
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`,
+      ((segEnd - cursor) / DAY + 1) / totalDays,
+    ]);
     cursor = segEnd + DAY;
   }
   return out;
 }
 
 const bucketOf = (month: string, bucket: Bucket) =>
-  bucket === 'month' ? month : bucket === 'year' ? month.slice(0, 4) : `${month.slice(0, 4)}-Q${Math.ceil(+month.slice(5, 7) / 3)}`;
+  bucket === 'month'
+    ? month
+    : bucket === 'year'
+      ? month.slice(0, 4)
+      : `${month.slice(0, 4)}-Q${Math.ceil(+month.slice(5, 7) / 3)}`;
 
 function columnRange(facts: EmissionFact[], bucket: Bucket, from?: string, to?: string): string[] {
   if (facts.length === 0 && !(from && to)) return [];
@@ -102,7 +109,12 @@ export interface HeatmapResult {
 }
 
 /** Lasagna plot: one row per group, one column per time bucket; multi-month periods are pro-rated by days. */
-export function heatmap(facts: EmissionFact[], by: GroupBy, bucket: Bucket, range: { from?: string; to?: string } = {}): HeatmapResult {
+export function heatmap(
+  facts: EmissionFact[],
+  by: GroupBy,
+  bucket: Bucket,
+  range: { from?: string; to?: string } = {},
+): HeatmapResult {
   const columns = columnRange(facts, bucket, range.from, range.to);
   const colIndex = new Map(columns.map((c, i) => [c, i]));
   const rows = new Map<string, { key: string; label: string; total: number; cells: number[] }>();
@@ -121,7 +133,9 @@ export function heatmap(facts: EmissionFact[], by: GroupBy, bucket: Bucket, rang
       row.total += v;
     }
   }
-  const sorted = [...rows.values()].sort((a, b) => (by === 'scope' ? Number(a.key) - Number(b.key) : b.total - a.total));
+  const sorted = [...rows.values()].sort((a, b) =>
+    by === 'scope' ? Number(a.key) - Number(b.key) : b.total - a.total,
+  );
   const round = (n: number) => Math.round(n * 1000) / 1000;
   const out = sorted.map((r) => ({ ...r, total: round(r.total), cells: r.cells.map(round) }));
   const columnTotals = columns.map((_, i) => round(out.reduce((s, r) => s + r.cells[i]!, 0)));
@@ -183,5 +197,12 @@ export function orgTree(facts: EmissionFact[], units: OrgUnitLite[]) {
     memo.set(id, t);
     return t;
   };
-  return units.map((u) => ({ orgUnitId: u.id, parentId: u.parentId, name: u.name, code: u.code, own: own.get(u.id)!, rollup: rollup(u.id) }));
+  return units.map((u) => ({
+    orgUnitId: u.id,
+    parentId: u.parentId,
+    name: u.name,
+    code: u.code,
+    own: own.get(u.id)!,
+    rollup: rollup(u.id),
+  }));
 }

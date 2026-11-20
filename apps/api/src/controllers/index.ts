@@ -1,6 +1,7 @@
 import type { Services } from '../services/index.js';
 import type { Controllers } from '../openapi/types.js';
 import { createActivityControllers } from './activity.controller.js';
+import { createEmissionsControllers } from './emissions.controller.js';
 import { createAuthControllers } from './auth.controller.js';
 import { getHealth } from './health.controller.js';
 import type { ControllerOptions } from './http.js';
@@ -21,4 +22,5 @@ export const createControllers = (
   ...createPlatformControllers(services),
   ...createOrgUnitControllers(services),
   ...createActivityControllers(services),
+  ...createEmissionsControllers(services),
 });

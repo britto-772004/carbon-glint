@@ -13,6 +13,7 @@ export interface ActivityRepository {
   /** All activities of a definition (for calculation). */
   allByDefinition(tenantId: string, adId: string): Promise<ActivityModel[]>;
   countByOrgUnit(tenantId: string, orgUnitId: string): Promise<number>;
+  findById(tenantId: string, id: string): Promise<ActivityModel | null>;
 }
 
 const BATCH = 1000;
@@ -45,6 +46,14 @@ export const createActivityRepository = (db: DbExecutor): ActivityRepository => 
       .from(activities)
       .where(and(eq(activities.tenantId, tenantId), eq(activities.activityDefinitionId, adId)))
       .orderBy(asc(activities.rowNumber)),
+  async findById(tenantId, id) {
+    const [row] = await db
+      .select()
+      .from(activities)
+      .where(and(eq(activities.tenantId, tenantId), eq(activities.id, id)))
+      .limit(1);
+    return row ?? null;
+  },
   async countByOrgUnit(tenantId, orgUnitId) {
     const [row] = await db
       .select({ n: count() })

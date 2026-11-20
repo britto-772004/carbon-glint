@@ -1,10 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { applyFilters, heatmap, monthShares, orgTree, summary, type EmissionFact } from '../../../src/services/emission-aggregates.js';
+import {
+  applyFilters,
+  heatmap,
+  monthShares,
+  orgTree,
+  summary,
+  type EmissionFact,
+} from '../../../src/services/emission-aggregates.js';
 
 const fact = (o: Partial<EmissionFact>): EmissionFact => ({
-  activityId: 'a', activityDefinitionId: 'ad1', activityDefinitionName: 'Electricity', scope: 2, categoryId: 'c2',
-  categoryName: 'Purchased electricity', orgUnitId: 'hq', orgUnitName: 'HQ', description: 'Grid', periodStart: '2026-01-01',
-  periodEnd: '2026-01-31', status: 'matched', co2eKg: 100, ...o,
+  activityId: 'a',
+  activityDefinitionId: 'ad1',
+  activityDefinitionName: 'Electricity',
+  scope: 2,
+  categoryId: 'c2',
+  categoryName: 'Purchased electricity',
+  orgUnitId: 'hq',
+  orgUnitName: 'HQ',
+  description: 'Grid',
+  periodStart: '2026-01-01',
+  periodEnd: '2026-01-31',
+  status: 'matched',
+  co2eKg: 100,
+  ...o,
 });
 
 describe('monthShares', () => {
@@ -23,7 +41,15 @@ describe('monthShares', () => {
 describe('heatmap', () => {
   const facts = [
     fact({ activityId: 'a1', co2eKg: 900, periodStart: '2026-01-01', periodEnd: '2026-03-31' }),
-    fact({ activityId: 'a2', scope: 1, categoryId: 'c1', categoryName: 'Stationary', co2eKg: 50, periodStart: '2026-02-10', periodEnd: '2026-02-10' }),
+    fact({
+      activityId: 'a2',
+      scope: 1,
+      categoryId: 'c1',
+      categoryName: 'Stationary',
+      co2eKg: 50,
+      periodStart: '2026-02-10',
+      periodEnd: '2026-02-10',
+    }),
   ];
 
   it('groups by scope with pro-rated monthly cells', () => {
@@ -62,15 +88,23 @@ describe('filters, summary, org tree', () => {
   ];
 
   it('filters by org subtree and period overlap', () => {
-    expect(applyFilters(facts, { orgUnitIds: new Set(['pun', 'pun-1']) }).map((f) => f.activityId)).toEqual(['a1', 'a3']);
+    expect(applyFilters(facts, { orgUnitIds: new Set(['pun', 'pun-1']) }).map((f) => f.activityId)).toEqual([
+      'a1',
+      'a3',
+    ]);
     expect(applyFilters(facts, { from: '2026-02-01' })).toHaveLength(0);
     expect(applyFilters(facts, { scope: 1 })).toHaveLength(1);
   });
 
   it('summarises scopes and statuses', () => {
     expect(summary(facts, 4)).toEqual({
-      co2eKg: { '1': 5, '2': 10, '3': 2, total: 17 }, activityCount: 3, needsReview: 1, unmatched: 0, overridden: 1,
-      orgUnitsWithData: 3, orgUnitCount: 4,
+      co2eKg: { '1': 5, '2': 10, '3': 2, total: 17 },
+      activityCount: 3,
+      needsReview: 1,
+      unmatched: 0,
+      overridden: 1,
+      orgUnitsWithData: 3,
+      orgUnitCount: 4,
     });
   });
 

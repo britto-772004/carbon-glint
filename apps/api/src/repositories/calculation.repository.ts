@@ -1,6 +1,36 @@
-import { and, eq, inArray, ne } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { DbExecutor } from '../db/client.js';
-import { calculations, type CalculationModel, type NewCalculationModel } from '../models/index.js';
+import {
+  activities,
+  activityDefinitions,
+  calculations,
+  efOverrides,
+  efSources,
+  emissionFactors,
+  ghgCategories,
+  orgUnits,
+  type CalculationModel,
+  type EfOverrideModel,
+  type NewCalculationModel,
+  type NewEfOverrideModel,
+} from '../models/index.js';
+import type { EmissionFact } from '../services/emission-aggregates.js';
+
+/** A calculation joined with its activity, definition, category, BU and factor — one emissions row. */
+export interface EmissionFactRow extends EmissionFact {
+  measure: number;
+  unit: string;
+  method: CalculationModel['method'];
+  confidence: number | null;
+  factor: {
+    id: string;
+    name: string;
+    sourceCode: string;
+    unit: string | null;
+    co2ePerUnit: number;
+    region: string;
+  } | null;
+}
 
 export interface CalculationRepository {
   listByDefinition(tenantId: string, adId: string): Promise<CalculationModel[]>;
@@ -9,6 +39,11 @@ export interface CalculationRepository {
   replaceForDefinition(tenantId: string, adId: string, rows: NewCalculationModel[]): Promise<void>;
   upsert(row: NewCalculationModel): Promise<CalculationModel>;
   listByTenant(tenantId: string, filter?: { activityDefinitionIds?: string[] }): Promise<CalculationModel[]>;
+  /** All emission rows of a tenant (optionally one activity). */
+  listFacts(tenantId: string, activityId?: string): Promise<EmissionFactRow[]>;
+  createOverride(row: NewEfOverrideModel): Promise<EfOverrideModel>;
+  listOverrides(tenantId: string, activityId: string): Promise<EfOverrideModel[]>;
+  revertOverrides(tenantId: string, activityId: string): Promise<number>;
 }
 
 const BATCH = 500;
@@ -64,4 +99,83 @@ export const createCalculationRepository = (db: DbExecutor): CalculationReposito
             : undefined,
         ),
       ),
+  async listFacts(tenantId, activityId) {
+    const rows = await db
+      .select({
+        c: calculations,
+        description: activities.description,
+        measure: activities.measure,
+        unit: activities.unit,
+        periodStart: activities.periodStart,
+        periodEnd: activities.periodEnd,
+        adName: activityDefinitions.name,
+        categoryName: ghgCategories.name,
+        orgUnitName: orgUnits.name,
+        factorId: emissionFactors.id,
+        factorName: emissionFactors.name,
+        factorUnit: emissionFactors.unit,
+        factorValue: emissionFactors.co2ePerUnit,
+        factorRegion: emissionFactors.region,
+        sourceCode: efSources.code,
+      })
+      .from(calculations)
+      .innerJoin(activities, eq(activities.id, calculations.activityId))
+      .innerJoin(activityDefinitions, eq(activityDefinitions.id, calculations.activityDefinitionId))
+      .innerJoin(ghgCategories, eq(ghgCategories.id, calculations.categoryId))
+      .leftJoin(orgUnits, eq(orgUnits.id, calculations.orgUnitId))
+      .leftJoin(emissionFactors, eq(emissionFactors.id, calculations.factorId))
+      .leftJoin(efSources, eq(efSources.id, emissionFactors.sourceId))
+      .where(
+        and(eq(calculations.tenantId, tenantId), activityId ? eq(calculations.activityId, activityId) : undefined),
+      );
+    return rows.map((r) => ({
+      activityId: r.c.activityId,
+      activityDefinitionId: r.c.activityDefinitionId,
+      activityDefinitionName: r.adName,
+      scope: r.c.scope as 1 | 2 | 3,
+      categoryId: r.c.categoryId,
+      categoryName: r.categoryName,
+      orgUnitId: r.c.orgUnitId,
+      orgUnitName: r.orgUnitName,
+      description: r.description,
+      measure: r.measure,
+      unit: r.unit,
+      periodStart: r.periodStart,
+      periodEnd: r.periodEnd,
+      status: r.c.status,
+      method: r.c.method,
+      confidence: r.c.confidence,
+      co2eKg: r.c.co2eKg,
+      factor: r.factorId
+        ? {
+            id: r.factorId,
+            name: r.factorName!,
+            sourceCode: r.sourceCode ?? '',
+            unit: r.factorUnit,
+            co2ePerUnit: r.factorValue!,
+            region: r.factorRegion!,
+          }
+        : null,
+    }));
+  },
+  async createOverride(row) {
+    const [saved] = await db.insert(efOverrides).values(row).returning();
+    return saved!;
+  },
+  listOverrides: (tenantId, activityId) =>
+    db
+      .select()
+      .from(efOverrides)
+      .where(and(eq(efOverrides.tenantId, tenantId), eq(efOverrides.activityId, activityId)))
+      .orderBy(efOverrides.createdAt),
+  async revertOverrides(tenantId, activityId) {
+    const rows = await db
+      .update(efOverrides)
+      .set({ revertedAt: new Date() })
+      .where(
+        and(eq(efOverrides.tenantId, tenantId), eq(efOverrides.activityId, activityId), isNull(efOverrides.revertedAt)),
+      )
+      .returning({ id: efOverrides.id });
+    return rows.length;
+  },
 });

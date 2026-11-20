@@ -7,6 +7,7 @@ import { createActivityDefinitionService, type ActivityDefinitionService } from 
 import { createDataSourceService, type DataSourceService } from './data-source.service.js';
 import { createTaxonomyService, type TaxonomyService } from './taxonomy.service.js';
 import { createCalculationService, type CalculationService } from './calculation.service.js';
+import { createEmissionsService, type EmissionsService } from './emissions.service.js';
 import { createAuthService, type AuthService } from './auth.service.js';
 import { createHealthService, type HealthService } from './health.service.js';
 import { createOrgUnitService, type OrgUnitService } from './org-unit.service.js';
@@ -35,10 +36,12 @@ export interface Services {
   activityDefinitions: ActivityDefinitionService;
   dataSources: DataSourceService;
   calculations: CalculationService;
+  emissions: EmissionsService;
 }
 
 export const createServices = (deps: ServiceDeps): Services => {
   const auth = createAuthService(deps);
+  const calculations = createCalculationService(deps);
   return {
     health: createHealthService(deps),
     auth,
@@ -49,6 +52,7 @@ export const createServices = (deps: ServiceDeps): Services => {
     taxonomy: createTaxonomyService(deps),
     activityDefinitions: createActivityDefinitionService(deps),
     dataSources: createDataSourceService(deps),
-    calculations: createCalculationService(deps),
+    calculations,
+    emissions: createEmissionsService(deps, calculations),
   };
 };

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import type {
   CalculationModel,
+  EfOverrideModel,
   EfSourceModel,
   EmissionFactorModel,
   ActivityDefinitionModel,
@@ -40,6 +41,7 @@ export interface MemoryStore {
   efSources: EfSourceModel[];
   emissionFactors: EmissionFactorModel[];
   calculations: CalculationModel[];
+  efOverrides: EfOverrideModel[];
   sessions: Map<string, { record: SessionRecord; expiresAt: number }>;
   rateCounters: Map<string, { count: number; resetAt: number }>;
 }
@@ -90,6 +92,7 @@ export function createMemoryStore(): MemoryStore {
     efSources: [],
     emissionFactors: [],
     calculations: [],
+    efOverrides: [],
     sessions: new Map(),
     rateCounters: new Map(),
   };
@@ -420,6 +423,7 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
         store.activities.filter((a) => a.tenantId === tenantId && a.activityDefinitionId === adId),
       countByOrgUnit: async (tenantId, orgUnitId) =>
         store.activities.filter((a) => a.tenantId === tenantId && a.orgUnitId === orgUnitId).length,
+      findById: async (tenantId, id) => store.activities.find((a) => a.tenantId === tenantId && a.id === id) ?? null,
     },
 
     emissionFactors: {
@@ -493,6 +497,71 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
         const saved = calcRow(row);
         store.calculations.push(saved);
         return saved;
+      },
+      async listFacts(tenantId, activityId) {
+        return store.calculations
+          .filter((c) => c.tenantId === tenantId && (!activityId || c.activityId === activityId))
+          .map((c) => {
+            const a = store.activities.find((x) => x.id === c.activityId)!;
+            const ad = store.activityDefinitions.find((x) => x.id === c.activityDefinitionId)!;
+            const cat = store.ghgCategories.find((x) => x.id === c.categoryId)!;
+            const ou = store.orgUnits.find((x) => x.id === c.orgUnitId);
+            const f = store.emissionFactors.find((x) => x.id === c.factorId);
+            const src = f && store.efSources.find((x) => x.id === f.sourceId);
+            return {
+              activityId: c.activityId,
+              activityDefinitionId: c.activityDefinitionId,
+              activityDefinitionName: ad.name,
+              scope: c.scope as 1 | 2 | 3,
+              categoryId: c.categoryId,
+              categoryName: cat.name,
+              orgUnitId: c.orgUnitId,
+              orgUnitName: ou?.name ?? null,
+              description: a.description,
+              measure: a.measure,
+              unit: a.unit,
+              periodStart: a.periodStart,
+              periodEnd: a.periodEnd,
+              status: c.status,
+              method: c.method,
+              confidence: c.confidence,
+              co2eKg: c.co2eKg,
+              factor: f
+                ? {
+                    id: f.id,
+                    name: f.name,
+                    sourceCode: src?.code ?? '',
+                    unit: f.unit,
+                    co2ePerUnit: f.co2ePerUnit,
+                    region: f.region,
+                  }
+                : null,
+            };
+          });
+      },
+      async createOverride(row) {
+        const saved = {
+          id: randomUUID(),
+          factorId: null,
+          value: null,
+          unit: null,
+          citation: null,
+          previousCo2eKg: null,
+          createdAt: now(),
+          revertedAt: null,
+          ...row,
+        } as EfOverrideModel;
+        store.efOverrides.push(saved);
+        return saved;
+      },
+      listOverrides: async (tenantId, activityId) =>
+        store.efOverrides.filter((o) => o.tenantId === tenantId && o.activityId === activityId),
+      async revertOverrides(tenantId, activityId) {
+        const open = store.efOverrides.filter(
+          (o) => o.tenantId === tenantId && o.activityId === activityId && !o.revertedAt,
+        );
+        for (const o of open) o.revertedAt = now();
+        return open.length;
       },
       listByTenant: async (tenantId, filter) =>
         store.calculations.filter(

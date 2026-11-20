@@ -1,5 +1,5 @@
 import { conversionFactor } from '../lib/units.js';
-import type { NewCalculationModel } from '../models/index.js';
+import type { ActivityModel, NewCalculationModel } from '../models/index.js';
 import { countryNameOf } from '../lib/countries.js';
 import { chooseFactor, compatibleUnits, matchQuery, rerank, type MatchChoice } from './factor-matching.js';
 import type { ServiceDeps } from './index.js';
@@ -63,16 +63,22 @@ export interface CalculationService {
     tenantId: string;
     activityDefinitionId: string;
   }): Promise<{ calculated: number; needsReview: number; unmatched: number }>;
+  /** Recalculate one activity from scratch (ignoring overrides), e.g. after reverting an override. */
+  recalculateActivity(tenantId: string, activityId: string): Promise<void>;
 }
 
-export const createCalculationService = ({ repositories: repos, ai }: ServiceDeps): CalculationService => ({
-  async run({ tenantId, activityDefinitionId }) {
+export const createCalculationService = ({ repositories: repos, ai }: ServiceDeps): CalculationService => {
+  const calculate = async (
+    tenantId: string,
+    activityDefinitionId: string,
+    only?: ActivityModel,
+  ): Promise<{ rows: NewCalculationModel[]; needsReview: number; unmatched: number } | null> => {
     const ad = await repos.activityDefinitions.findById(tenantId, activityDefinitionId);
-    if (!ad) return { calculated: 0, needsReview: 0, unmatched: 0 };
+    if (!ad) return null;
     const [activities, orgUnits, existing] = await Promise.all([
-      repos.activities.allByDefinition(tenantId, activityDefinitionId),
+      only ? Promise.resolve([only]) : repos.activities.allByDefinition(tenantId, activityDefinitionId),
       repos.orgUnits.listByTenant(tenantId),
-      repos.calculations.listByDefinition(tenantId, activityDefinitionId),
+      only ? Promise.resolve([]) : repos.calculations.listByDefinition(tenantId, activityDefinitionId),
     ]);
     const overridden = new Set(existing.filter((c) => c.status === 'overridden').map((c) => c.activityId));
     const countryOf = new Map(orgUnits.map((u) => [u.id, countryNameOf(u.country)]));
@@ -185,7 +191,21 @@ export const createCalculationService = ({ repositories: repos, ai }: ServiceDep
       });
     }
 
-    await repos.transaction((tx) => tx.calculations.replaceForDefinition(tenantId, activityDefinitionId, rows));
-    return { calculated: rows.length, needsReview, unmatched };
-  },
-});
+    return { rows, needsReview, unmatched };
+  };
+
+  return {
+    async run({ tenantId, activityDefinitionId }) {
+      const out = await calculate(tenantId, activityDefinitionId);
+      if (!out) return { calculated: 0, needsReview: 0, unmatched: 0 };
+      await repos.transaction((tx) => tx.calculations.replaceForDefinition(tenantId, activityDefinitionId, out.rows));
+      return { calculated: out.rows.length, needsReview: out.needsReview, unmatched: out.unmatched };
+    },
+    async recalculateActivity(tenantId, activityId) {
+      const activity = await repos.activities.findById(tenantId, activityId);
+      if (!activity) return;
+      const out = await calculate(tenantId, activity.activityDefinitionId, activity);
+      if (out?.rows[0]) await repos.calculations.upsert(out.rows[0]);
+    },
+  };
+};
