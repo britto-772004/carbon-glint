@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { configureSdk } from '@carbon-glint/sdk';
 import { server } from './mocks/server';
+import { resetSession } from './mocks/session';
 import { TEST_API_BASE_URL } from './constants';
 
 // The real generated SDK runs in tests; MSW intercepts at the network layer.
@@ -22,6 +23,7 @@ beforeAll(() =>
 
 afterEach(() => {
   server.resetHandlers();
+  resetSession();
   cleanup();
   if (unhandled.length > 0) {
     const messages = unhandled.splice(0).join('\n\n');
