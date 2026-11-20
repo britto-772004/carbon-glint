@@ -119,7 +119,7 @@ export const createDataSourceService = ({ repositories: repos, jobs, files, ai }
       }
 
       const id = randomUUID();
-      const safeName = file.originalname.replace(/[^\w.\-]+/g, '_').slice(-120);
+      const safeName = file.originalname.replace(/[^\w.-]+/g, '_').slice(-120);
       const fileKey = `tenants/${tenantId}/data-sources/${id}/${safeName}`;
       await files.put(fileKey, file.buffer);
       const row = await repos.dataSources.create({

@@ -80,7 +80,7 @@ export async function parseSpreadsheet(
   opts: { sheetName?: string | null; headerRow?: number } = {},
 ): Promise<ParsedSheet> {
   if (type === 'csv') {
-    const text = data.toString('utf8').replace(/^﻿/, '');
+    const text = data.toString('utf8').replace(/^\uFEFF/, '');
     const result = Papa.parse<string[]>(text, { skipEmptyLines: false });
     const grid = result.data.map((r) => r.map((c) => String(c ?? '')));
     return { sheets: [], sheetName: null, ...shape(grid, opts.headerRow) };
