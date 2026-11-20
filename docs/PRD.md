@@ -44,22 +44,24 @@ a self-serve password reset flow (see §5.4), market-based Scope 2 (location-bas
 | **Activity**                 | One row of activity data: description, location, **measure** (quantity), unit, org unit, period.                                  |
 | **Emission Factor (EF)**     | kg CO₂e (or per-gas values) per unit of activity, from a published database.                                                      |
 | **Measure**                  | The quantity column (called "volume" in early notes).                                                                             |
-| **Lasagne chart**            | A layered drill-down chart (§9.3).                                                                                                |
+| **Lasagne chart**            | A drill-down heatmap (lasagna plot): rows = entities, columns = months, colour = tCO₂e (§9.3).                                    |
 | **Traceability tree**        | Every input, conversion, factor and override behind an activity's CO₂e.                                                           |
 
 ## 3. Users and roles
 
-| Role            | Who                                                                             | Can                                                                                                          |
-| --------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **Super Admin** | The person who signs the company up (tenant owner). Several per tenant allowed. | Everything, plus user management (invite, disable, change roles) and company settings.                       |
-| **Admin**       | Invited colleagues.                                                             | Org units, Activity Definitions, EF overrides, dashboards, reports. Cannot manage users or company settings. |
+| Role            | Scope                    | Who                                                                                                        | Can                                                                                                                                                                                                           |
+| --------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Super Admin** | **Global** (platform)    | The Carbon Glint operator (us). Created by a **seed script**, never through sign-up. Not tied to a tenant. | **Platform console:** list and search all tenants, view a tenant's profile, users and onboarding answers, disable or enable tenants and users, resend verification. Doesn't do ESG work inside tenants in v1. |
+| **Admin**       | **Per tenant** (company) | The person who signs the company up, plus colleagues they invite.                                          | Everything inside their own tenant: org units, Activity Definitions, EF overrides, dashboards, reports, company settings, and inviting or disabling colleagues.                                               |
 
-> **Assumption, to confirm:** both roles are _per tenant_. There is no platform-operator console in v1.
+- Seed: `pnpm --filter @carbon-glint/api seed:superadmin --email <e> --password <p>` (idempotent; reads `SUPERADMIN_EMAIL` and
+  `SUPERADMIN_PASSWORD` when no flags are given). Super Admin emails are exempt from the work-email rule.
+- Super Admin signs in on the same page and lands on **/platform** (the tenant console), not a tenant dashboard.
 
 ## 4. Platform and architecture changes
 
-The user wants **all services on a single VM for now**. This replaces the current Cloud Run + Neon +
-Firebase Hosting setup.
+**Decision: all services on a single VM for now.** This fully replaces the current Cloud Run + Neon +
+Firebase Hosting setup, which will be removed from the repo. The infrastructure is defined in **Terraform** in `apps/infra`.
 
 ```
                ┌──────────────────────── single VM (docker compose) ────────────────────────┐
@@ -82,7 +84,8 @@ Firebase Hosting setup.
 | Background work | A new `apps/worker` (same codebase, same layers) for file imports, EF matching and calculation, PDF rendering and email.                                                                                                                                                                                            |
 | Email           | `nodemailer` over SMTP. **Port 25 outbound is blocked on GCP, and mail sent straight from a VM lands in spam.** Use an SMTP relay on 587 (Brevo / SendGrid / Amazon SES / Google Workspace relay). The app only needs `SMTP_HOST/PORT/USER/PASS`, so the provider can be swapped. Dev uses a **Mailpit** container. |
 | Files           | Uploads and generated PDFs stored on a VM volume under `/data`, behind a `FileStorage` interface so Cloud Storage can be swapped in later.                                                                                                                                                                          |
-| CI/CD           | GitHub Actions: CI (unchanged) → build `api`/`worker`/`web` images → push to Artifact Registry → SSH to the VM → `docker compose pull && up -d` → run migrations → smoke test `/api/health`.                                                                                                                        |
+| Infrastructure  | **Terraform** (`apps/infra`): VPC and firewall (80/443 only, SSH through IAP), static IP, VM with a persistent data disk and startup script (Docker install), Artifact Registry, GCS backup bucket with lifecycle rules, service accounts, and Workload Identity Federation for GitHub. Remote state in GCS.        |
+| CI/CD           | GitHub Actions: CI → build `api`/`worker`/`web` images → push to Artifact Registry → SSH (via IAP) to the VM → `docker compose pull && up -d` → run migrations → smoke test `/api/health`. `terraform plan` runs on PRs that touch `apps/infra`.                                                                    |
 | Charts          | Apache ECharts (drill-down, stacked bars, treemap, sunburst) inside MUI components.                                                                                                                                                                                                                                 |
 | Org chart       | React Flow (`@xyflow/react`) with automatic tree layout (`dagre`/`elkjs`).                                                                                                                                                                                                                                          |
 | PDF             | HTML/React templates rendered by headless Chromium (Playwright) in the worker. Charts as SVG.                                                                                                                                                                                                                       |
@@ -101,10 +104,10 @@ container/component split with MUI, and controller → service → repository �
 - **Work emails only.** Reject free and disposable providers (gmail, yahoo, outlook/hotmail/live, icloud,
   proton, zoho-free, yandex, mail.ru, gmx, aol, plus a disposable-domain list). The check runs on the server and
   is mirrored in the UI.
-- **One tenant per email domain.** The first verified user from `acme.com` creates the tenant and becomes Super Admin.
+- **One tenant per email domain.** The first verified user from `acme.com` creates the tenant and becomes its Admin.
   Later sign-ups from `acme.com` see: "Your company is already on Carbon Glint. Ask your admin for an invite."
-- **Email verification (recommended):** a verification link is emailed (expires in 24 h) and the account is active
-  once verified. Without this, anyone could claim a company's domain.
+- **Email verification (required):** a verification link is emailed (single use, expires in 24 h) and the account can't
+  sign in until it is verified. A "resend verification" option is available. This proves the user owns the company domain.
 
 ### 5.2 Onboarding (first sign-in only)
 
@@ -140,16 +143,28 @@ On finish: save to the tenant, create a root org unit named after the company (H
 > ⚠️ Emailed passwords are weaker than reset links, because the password sits in the user's inbox. This is
 > acceptable for v1 with the mitigations above. We'll revisit before enterprise customers.
 
-### 5.5 User management (Super Admin)
+### 5.5 User management
 
-- Invite a user by email with a role, sent by SMTP. The invite link expires in 7 days and the invitee must use the tenant's domain.
-- The invitee opens the link, sets their name and password, and lands on the dashboard (no onboarding).
-- List users, resend or revoke invites, change role, disable or enable a user. The last Super Admin can't be removed.
+**Inside a tenant (Admins):**
+
+- Invite a colleague by email (sent by SMTP). The invite link expires in 7 days and the invitee must use the tenant's domain.
+- The invitee opens the link, sets their name and password (the link proves the email, so no separate verification is needed), and
+  lands on the dashboard (no onboarding).
+- List users, resend or revoke invites, disable or enable a colleague. An Admin can't disable themselves, and the last
+  active Admin can't be disabled.
+
+**Platform console (Super Admin, `/platform`):**
+
+- Tenant list: name, domain, industry, employees, BU count, created, onboarded, number of users, status. Search and filter.
+- Tenant detail: onboarding answers, users, disable or enable the tenant (disabled tenants can't sign in), disable or enable a user, resend verification.
 
 ### 5.6 Acceptance criteria
 
-- A gmail address can't sign up. An `@acme.com` address can, and creates the "Acme" tenant.
+- A gmail address can't sign up. An `@acme.com` address can, and creates the "Acme" tenant after the email is verified.
+- An unverified account can't sign in. The verification link works once and expires after 24 h.
 - A second `@acme.com` sign-up is redirected to "ask for invite".
+- The seed script creates a Super Admin. Re-running it doesn't duplicate the account. The Super Admin sees every tenant on `/platform`,
+  and a disabled tenant's users can't sign in.
 - First sign-in runs onboarding exactly once. Afterwards it lands on the dashboard.
 - Forgot password emails a working new password, the old one stops working, and other sessions are logged out.
 - A user of tenant A can never read or change tenant B's data (tested at the HTTP and SQL levels).
@@ -305,12 +320,21 @@ co2e_kg        = normalised_qty × factor.co2e_per_unit
 Scope · GHG category · Activity Definition · business unit (including children) · period · EF source · status
 (needs review, overridden) · confidence range. Filters are reflected in the URL so views can be shared.
 
-### 9.3 Lasagne drill-down chart
+### 9.3 Lasagne chart (drill-down heatmap)
 
-> **Interpretation, to confirm:** a layered horizontal stacked bar. Each layer is one level of the hierarchy and
-> each segment is a share of CO₂e. Clicking a segment drills down to the next layer, with a breadcrumb to go back up:
-> **Total → Scope → GHG category → Activity Definition → Activity** (or, with "Group by BU" switched on, **BU → child BU → …**).
-> Tooltips show the absolute tCO₂e and the % of the parent.
+A **lasagna plot**, a heatmap where:
+
+- **Rows** are the entities at the current drill level. **Columns** are time buckets (months by default; quarters or years selectable)
+  across the selected period. **Cell colour** is tCO₂e on a sequential scale, and empty cells (no data) are hatched so missing data stands out.
+- A **row total** column on the right and a **column total** row at the bottom, plus an optional "normalise per row" toggle to
+  compare seasonality.
+- **Drill down** by clicking a row label. Hierarchy: **Scope → GHG category → Activity Definition → Activity**, or with
+  "Group by BU": **BU → child BU → … → Activity Definition**. A breadcrumb goes back up.
+- Clicking a cell opens the activities behind that row and month in the table (§9.1).
+- Tooltips show tCO₂e, % of the row and % of the column.
+- **Monthly allocation:** an activity whose period spans several months is pro-rated by days across those months, and the trace
+  records the split.
+- Sort rows by total (default), name, or the latest month. Top-N rows with "Other" for long lists.
 
 ### 9.4 GHG traceability tree (per activity)
 
@@ -343,7 +367,7 @@ leaves an audit record. Filters and drill-down agree with the table totals.
 
 - **KPI cards:** total tCO₂e, Scope 1 / 2 / 3 split, % change compared with the previous period (when available), number of activities
   needing review, data coverage (BUs with data out of the total).
-- **Lasagne drill-down** (same component as §9.3) with filters for BU, scope, category, AD and period.
+- **Lasagne heatmap** (same component as §9.3) with filters for BU, scope, category, AD and period.
 - **BU tree view:** a React Flow tree of org units. Each node shows its total and a Scope 1/2/3 mini-bar, with rolled-up
   totals. Clicking a node filters the whole dashboard to that subtree.
 - Trend over the reporting period (monthly stacked by scope) and the top 10 emitting activities.
@@ -374,16 +398,16 @@ and citations, data quality (coverage, % estimated, overrides list), and an appe
 
 ## 12. Delivery plan (one phase at a time)
 
-| #     | Phase                               | Contents                                                                                                                                                                     | Done when                                                                           |
-| ----- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| **0** | **VM platform**                     | docker compose (caddy, api, worker, postgres, redis, mailpit for dev), `FileStorage`, SMTP mailer, BullMQ, CI/CD to VM, backups. Retire Cloud Run, Neon and Firebase config. | `docker compose up` runs everything locally. CI deploys to the VM. Health is green. |
-| **1** | **Auth, tenancy, onboarding**       | landing, sign-up (work email + verification), sign-in, sessions, onboarding wizard, app shell with tenant, forgot password, invites and user management, RLS                 | §5.6 passes                                                                         |
-| **2** | **Org Units**                       | React Flow tree + table, CRUD, re-parent                                                                                                                                     | §6 acceptance                                                                       |
-| **3** | **Taxonomy + Activity Definitions** | industries and categories seed, custom categories, AD CRUD, upload, AI and manual mapping, import job, sample XLSX and visual guide                                          | §7 acceptance                                                                       |
-| **4** | **EF library + engine**             | ETL for DEFRA, ADEME, EPA, CEA, NGA, EMA (IPCC once terms are checked), search API, Gemini matching, unit catalogue, calculation and trace, publish flow                     | factors searchable; published AD → CO₂e for every activity                          |
-| **5** | **Emission Factors tab**            | views, filters, lasagne, traceability panel, overrides                                                                                                                       | §9 acceptance                                                                       |
-| **6** | **Dashboard**                       | KPIs, lasagne, BU tree, trends                                                                                                                                               | §10                                                                                 |
-| **7** | **Reports**                         | PDF engine and the six formats                                                                                                                                               | §11 acceptance                                                                      |
+| #     | Phase                               | Contents                                                                                                                                                                                                                                                                     | Done when                                                                                                      |
+| ----- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **0** | **VM platform + Terraform**         | Terraform in `apps/infra` (VPC, firewall, IP, VM, disk, Artifact Registry, backup bucket, WIF); docker compose (caddy, api, worker, postgres, redis, mailpit for dev); `FileStorage`, SMTP mailer, BullMQ; CI/CD to VM; backups. Retire Cloud Run, Neon and Firebase config. | `terraform plan` is clean. `docker compose up` runs everything locally. CI deploys to the VM. Health is green. |
+| **1** | **Auth, tenancy, onboarding**       | landing, sign-up (work email + verification), sign-in, sessions, onboarding wizard, app shell with tenant, forgot password, invites, Super Admin seed and platform console, RLS                                                                                              | §5.6 passes                                                                                                    |
+| **2** | **Org Units**                       | React Flow tree + table, CRUD, re-parent                                                                                                                                                                                                                                     | §6 acceptance                                                                                                  |
+| **3** | **Taxonomy + Activity Definitions** | industries and categories seed, custom categories, AD CRUD, upload, AI and manual mapping, import job, sample XLSX and visual guide                                                                                                                                          | §7 acceptance                                                                                                  |
+| **4** | **EF library + engine**             | ETL for DEFRA, ADEME, EPA, CEA, NGA, EMA (IPCC once terms are checked), search API, Gemini matching, unit catalogue, calculation and trace, publish flow                                                                                                                     | factors searchable; published AD → CO₂e for every activity                                                     |
+| **5** | **Emission Factors tab**            | views, filters, lasagne, traceability panel, overrides                                                                                                                                                                                                                       | §9 acceptance                                                                                                  |
+| **6** | **Dashboard**                       | KPIs, lasagne, BU tree, trends                                                                                                                                                                                                                                               | §10                                                                                                            |
+| **7** | **Reports**                         | PDF engine and the six formats                                                                                                                                                                                                                                               | §11 acceptance                                                                                                 |
 
 Each phase starts with the **OpenAPI contract** for its endpoints, follows the backend and frontend skills, and ships with
 service, controller, repository (Postgres) and frontend component and container tests, all running in CI.
@@ -392,8 +416,10 @@ service, controller, repository (Postgres) and frontend component and container 
 
 ```
 tenants(id, name, email_domain UNIQUE, industry_id, employee_band, bu_count, website, linkedin_url, gwp_basis, onboarded_at)
-users(id, tenant_id, email UNIQUE, name, password_hash, role[superadmin|admin], status[pending|active|disabled],
-      email_verified_at, password_is_temporary, last_login_at)
+users(id, tenant_id NULL for superadmin, email UNIQUE, name, password_hash, role[superadmin|admin],
+      status[pending|active|disabled], email_verified_at, password_is_temporary, last_login_at)
+      CHECK ((role = 'superadmin') = (tenant_id IS NULL))
+email_verifications(id, user_id, token_hash, expires_at, used_at)
 invitations(id, tenant_id, email, role, token_hash, invited_by, expires_at, accepted_at, revoked_at)
 org_units(id, tenant_id, parent_id→org_units, name, code, type, country, city, address, active, pos_x, pos_y)
 industries(id, code, name)                      ghg_categories(id, tenant_id NULL=system, scope, code, name, description)
@@ -429,14 +455,16 @@ audit_log(id, tenant_id, actor_id, action, entity, entity_id, before JSONB, afte
 
 ## 15. Open questions
 
-1. **Roles:** are Super Admin and Admin per tenant (as assumed), or is Super Admin _us_, the platform operator across all tenants?
-2. **Deployment:** replace Cloud Run, Neon and Firebase Hosting fully with the single VM (as assumed), or keep any of them?
-3. **"Lasagne chart":** is §9.3's layered drill-down bar what you mean, or a heatmap (rows = BUs, columns = months)?
-4. **Email verification at sign-up:** OK to require it (recommended)?
-5. **SMTP provider** for the relay (Brevo / SendGrid / SES / Google Workspace)?
-6. **NIRF:** which exact template or criteria should the college report follow?
-7. **Middle East:** UAE and Saudi as listed, or other countries (Qatar, Oman, Bahrain)?
-8. **ecoinvent:** do you have, or plan to buy, a licence?
+**Decided (2026-11-20):** Super Admin is global and seeded, and Admin is per company (§3). Single VM replaces
+Cloud Run, Neon and Firebase, with Terraform in `apps/infra` (§4). Email verification is required (§5.1). The lasagne chart is a heatmap (§9.3).
+
+Still open:
+
+1. **SMTP provider** for the relay (Brevo / SendGrid / SES / Google Workspace). Needed before production email works. Dev uses Mailpit.
+2. **NIRF:** which exact template or criteria should the college report follow? (Phase 7)
+3. **Middle East:** UAE and Saudi as listed, or other countries (Qatar, Oman, Bahrain)? (Phase 7)
+4. **ecoinvent:** do you have, or plan to buy, a licence? (Phase 4)
+5. **GCP project and region** for the VM, and a **domain name** for TLS. (Phase 0 apply)
 
 ## 16. Later (abatement, v2+)
 
