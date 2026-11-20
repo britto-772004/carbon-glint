@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { PasswordField } from '../common/PasswordField';
 import type { InvitationPreview } from '@carbon-glint/sdk';
 import { formValues } from '../../lib/errors';
 import { AuthLayout } from './AuthLayout';
@@ -49,10 +50,9 @@ export function AcceptInviteForm({
       <Stack component="form" spacing={2.5} onSubmit={submit}>
         {error && <Alert severity="error">{error}</Alert>}
         <TextField name="name" label="Full name" required autoComplete="name" />
-        <TextField
+        <PasswordField
           name="password"
           label="Choose a password"
-          type="password"
           required
           autoComplete="new-password"
           helperText="At least 10 characters, with a letter and a number."

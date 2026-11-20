@@ -35,7 +35,6 @@ const MAPPING = {
   description: 'Activity Description',
   measure: 'Measure',
   unit: 'Unit',
-  orgUnit: 'Business Unit',
   location: null,
   periodStart: null,
   periodEnd: null,
@@ -64,7 +63,7 @@ describe('Activity Definition detail + upload wizard', () => {
       http.post(apiUrl('/data-sources/:id/suggest-mapping'), () =>
         HttpResponse.json<MappingSuggestion>({
           mapping: MAPPING,
-          confidence: { description: 0.95, measure: 0.9, unit: 0.9, orgUnit: 0.6 },
+          confidence: { description: 0.95, measure: 0.9, unit: 0.9 },
           source: 'ai',
           reasoning: 'Clear headers.',
         }),

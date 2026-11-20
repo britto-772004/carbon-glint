@@ -4,12 +4,6 @@ import { UNITS } from './units.js';
 /** Columns of the sample data-source template (headers chosen so auto-mapping recognises them). */
 export const TEMPLATE_COLUMNS = [
   { header: 'Activity Description', key: 'description', width: 38, note: 'What was consumed or done (required)' },
-  {
-    header: 'Business Unit',
-    key: 'orgUnit',
-    width: 16,
-    note: 'Org unit code or name (optional; defaults to the AD default)',
-  },
   { header: 'Location', key: 'location', width: 22, note: 'City / country / route (optional)' },
   { header: 'Measure', key: 'measure', width: 12, note: 'Quantity — a number (required)' },
   { header: 'Unit', key: 'unit', width: 14, note: 'kWh, L, kg, t, km, passenger.km, tonne.km, room.night… (required)' },
@@ -22,7 +16,6 @@ export const TEMPLATE_COLUMNS = [
 export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'], string | number>> = [
   {
     description: 'Grid electricity – office',
-    orgUnit: 'HQ',
     location: 'Bengaluru, IN',
     measure: 18450,
     unit: 'kWh',
@@ -33,7 +26,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Diesel – DG set backup power',
-    orgUnit: 'HQ',
     location: 'Bengaluru, IN',
     measure: 1200,
     unit: 'L',
@@ -44,7 +36,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Petrol – company cars',
-    orgUnit: 'HQ',
     location: 'Bengaluru, IN',
     measure: 640,
     unit: 'L',
@@ -55,7 +46,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Natural gas – boiler',
-    orgUnit: 'PUN',
     location: 'Pune, IN',
     measure: 5200,
     unit: 'm3',
@@ -66,7 +56,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'R-410A refrigerant top-up – HVAC',
-    orgUnit: 'PUN',
     location: 'Pune, IN',
     measure: 3.5,
     unit: 'kg',
@@ -77,7 +66,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Flight – economy BLR→DXB return',
-    orgUnit: 'HQ',
     location: 'BLR-DXB',
     measure: 5420,
     unit: 'passenger.km',
@@ -88,7 +76,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Hotel stay – Dubai',
-    orgUnit: 'DXB',
     location: 'Dubai, AE',
     measure: 4,
     unit: 'room.night',
@@ -99,7 +86,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Road freight – HGV diesel',
-    orgUnit: 'PUN',
     location: 'Pune → Mumbai',
     measure: 18600,
     unit: 'tonne.km',
@@ -110,7 +96,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Office paper (A4)',
-    orgUnit: 'HQ',
     location: 'Bengaluru, IN',
     measure: 0.25,
     unit: 't',
@@ -121,7 +106,6 @@ export const TEMPLATE_ROWS: Array<Record<(typeof TEMPLATE_COLUMNS)[number]['key'
   },
   {
     description: 'Mixed waste to landfill',
-    orgUnit: 'PUN',
     location: 'Pune, IN',
     measure: 2.1,
     unit: 't',
@@ -175,7 +159,7 @@ export async function buildActivityTemplateXlsx(): Promise<Buffer> {
     .join(',')}"`;
   if (unitList.length < 255) {
     for (let r = 2; r <= 500; r++) {
-      ws.getCell(`E${r}`).dataValidation = {
+      ws.getCell(`D${r}`).dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: [unitList],
@@ -183,7 +167,7 @@ export async function buildActivityTemplateXlsx(): Promise<Buffer> {
       };
     }
   }
-  ws.autoFilter = { from: 'A1', to: 'I1' };
+  ws.autoFilter = { from: 'A1', to: 'H1' };
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 

@@ -1098,6 +1098,33 @@ paths:
                   $ref: '#/components/schemas/EmissionFactorSource'
         default:
           $ref: '#/components/responses/Error'
+  /emission-factors/sync:
+    get:
+      operationId: getEmissionFactorSyncStatus
+      tags: [emissions]
+      summary: When the factor databases were last checked for new editions, and when the next check runs
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionFactorSyncStatus'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: syncEmissionFactors
+      tags: [emissions]
+      summary: Check for newly published factor databases now (runs in the background)
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '202':
+          description: Sync queued
+        default:
+          $ref: '#/components/responses/Error'
   /emission-factors/search:
     get:
       operationId: searchEmissionFactors
@@ -1908,6 +1935,41 @@ components:
         importedAt:
           type: string
           format: date-time
+    EmissionFactorSyncStatus:
+      type: object
+      additionalProperties: false
+      required: [intervalHours, nextRunAt, lastRun]
+      properties:
+        intervalHours:
+          type: integer
+          description: Hours between automatic checks (0 = automatic sync disabled)
+        nextRunAt:
+          type: [string, 'null']
+          format: date-time
+        lastRun:
+          type: [object, 'null']
+          additionalProperties: false
+          required: [trigger, status, startedAt, finishedAt, imported, message]
+          properties:
+            trigger:
+              type: string
+              enum: [schedule, manual]
+            status:
+              type: string
+              enum: [ok, failed]
+            startedAt:
+              type: string
+              format: date-time
+            finishedAt:
+              type: [string, 'null']
+              format: date-time
+            imported:
+              type: array
+              items:
+                type: string
+              description: Source codes newly imported by that run
+            message:
+              type: string
     EmissionFactor:
       type: object
       additionalProperties: false
@@ -2435,7 +2497,7 @@ components:
       type: object
       additionalProperties: false
       description: Target GHG field → source column name (null = not mapped). description, measure and unit are required to import.
-      required: [description, measure, unit, location, orgUnit, periodStart, periodEnd, spend, currency]
+      required: [description, measure, unit, location, periodStart, periodEnd, spend, currency]
       properties:
         description:
           type: [string, 'null']
@@ -2444,8 +2506,6 @@ components:
         unit:
           type: [string, 'null']
         location:
-          type: [string, 'null']
-        orgUnit:
           type: [string, 'null']
         periodStart:
           type: [string, 'null']

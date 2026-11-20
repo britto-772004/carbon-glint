@@ -11,7 +11,6 @@ const COLUMNS = [
     sample: ['Grid electricity – office', 'Diesel – DG set'],
     required: true,
   },
-  { header: 'Business Unit', field: 'Business unit', sample: ['HQ', 'PUN'], required: false },
   { header: 'Measure', field: 'Measure', sample: ['18,450', '1,200'], required: true },
   { header: 'Unit', field: 'Unit', sample: ['kWh', 'L'], required: true },
   { header: 'Period Start', field: 'Period', sample: ['2026-01-01', '2026-01-01'], required: false },

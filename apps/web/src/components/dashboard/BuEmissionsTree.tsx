@@ -1,5 +1,15 @@
 import type { OrgEmissionNode } from '@carbon-glint/sdk';
-import { Background, Controls, Handle, Position, ReactFlow, type Edge, type Node, type NodeProps } from '@xyflow/react';
+import {
+  Background,
+  Controls,
+  Handle,
+  Position,
+  ReactFlow,
+  type Edge,
+  type Node,
+  type NodeChangeset,
+  type NodeProps,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -21,13 +31,13 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
   return (
     <Paper
       variant="outlined"
-      className="nopan nodrag"
       onClick={() => data.onSelect(node.orgUnitId)}
       sx={{
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
         p: 1.5,
-        cursor: 'pointer',
+        cursor: 'grab',
+        '&:active': { cursor: 'grabbing' },
         borderRadius: 2.5,
         borderWidth: 2,
         borderColor: selected ? 'secondary.main' : 'divider',
@@ -37,7 +47,7 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
         background: node.parentId ? undefined : 'linear-gradient(135deg, rgba(20,184,166,0.10), rgba(101,163,13,0.06))',
       }}
     >
-      <Handle type="target" position={Position.Left} isConnectable={false} />
+      <Handle type="target" position={Position.Top} isConnectable={false} />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline', justifyContent: 'space-between' }}>
         <Typography variant="subtitle2" noWrap title={node.name} sx={{ minWidth: 0 }}>
           {node.name}
@@ -67,7 +77,7 @@ function BuNode({ data }: NodeProps<BuFlowNode>) {
           </Stack>
         ))}
       </Stack>
-      <Handle type="source" position={Position.Right} isConnectable={false} />
+      <Handle type="source" position={Position.Bottom} isConnectable={false} />
     </Paper>
   );
 }
@@ -76,6 +86,8 @@ const nodeTypes = { bu: BuNode };
 export interface BuEmissionsTreeProps {
   nodes: BuFlowNode[];
   edges: Edge[];
+  /** Applies React Flow's drag changes so units can be repositioned. */
+  onNodesChange: (changes: NodeChangeset<BuFlowNode>) => void;
   isLoading: boolean;
   selectedName?: string;
   /** Stretch to the parent's height (dashboard hero). */
@@ -83,7 +95,7 @@ export interface BuEmissionsTreeProps {
 }
 
 /** Business-unit tree with emissions rolled up per scope; clicking a unit filters the dashboard. */
-export function BuEmissionsTree({ nodes, edges, isLoading, selectedName, fill }: BuEmissionsTreeProps) {
+export function BuEmissionsTree({ nodes, edges, onNodesChange, isLoading, selectedName, fill }: BuEmissionsTreeProps) {
   return (
     <Card data-tour="dash-bu" sx={fill ? { height: '100%', display: 'flex', flexDirection: 'column' } : undefined}>
       <CardContent
@@ -98,7 +110,7 @@ export function BuEmissionsTree({ nodes, edges, isLoading, selectedName, fill }:
           <Typography variant="caption" color="text.secondary" noWrap>
             {selectedName
               ? `Filtered to ${selectedName} (click again to clear)`
-              : 'Click a unit to filter the dashboard'}
+              : 'Click a unit to filter · drag to rearrange'}
           </Typography>
         </Stack>
         {isLoading ? (
@@ -124,7 +136,7 @@ export function BuEmissionsTree({ nodes, edges, isLoading, selectedName, fill }:
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
-              nodesDraggable={false}
+              onNodesChange={onNodesChange}
               nodesConnectable={false}
               fitView
               fitViewOptions={{ padding: 0.08, maxZoom: 1 }}

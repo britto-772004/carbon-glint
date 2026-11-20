@@ -23,8 +23,26 @@ const EnvSchema = z.object({
   SMTP_USER: optional(z.string().min(1).optional()),
   SMTP_PASS: optional(z.string().min(1).optional()),
   MAIL_FROM: optional(z.string().min(1).default('Carbon Glint <no-reply@carbon-glint.local>')),
+  /** Which LLM backend serves the assistant, mapping, matching and embeddings. */
+  LLM_PROVIDER: optional(z.enum(['gemini', 'openai']).default('gemini')),
+  /** Overrides the provider's default chat model (GEMINI_MODEL / OPENAI_MODEL). */
+  LLM_MODEL: optional(z.string().min(1).optional()),
+  /** How often the worker checks for newly published emission-factor datasets (hours; 0 = never). */
+  EF_SYNC_INTERVAL_HOURS: optional(
+    z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(24 * 90)
+      .default(168),
+  ),
   GEMINI_API_KEY: optional(z.string().min(1).optional()),
   GEMINI_MODEL: optional(z.string().min(1).default('gemini-2.5-flash')),
+  OPENAI_API_KEY: optional(z.string().min(1).optional()),
+  OPENAI_MODEL: optional(z.string().min(1).default('gpt-4o-mini')),
+  OPENAI_EMBEDDING_MODEL: optional(z.string().min(1).default('text-embedding-3-small')),
+  /** Point at any OpenAI-compatible server (Azure, OpenRouter, vLLM, Ollama…). */
+  OPENAI_BASE_URL: optional(z.url().default('https://api.openai.com/v1')),
   /** Comma-separated list of allowed origins. Empty = same-origin only (Firebase Hosting rewrite). */
   CORS_ORIGINS: z
     .string()

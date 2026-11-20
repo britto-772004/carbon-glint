@@ -207,7 +207,7 @@ function MappingStep(p: UploadWizardProps) {
               mode: 'ai' as const,
               icon: <AutoAwesomeOutlined sx={{ fontSize: 30, color: 'primary.main' }} />,
               title: 'Automatically infer (AI)',
-              text: 'Gemini reads your headers and sample rows and proposes a mapping you can review.',
+              text: 'AI reads your headers and sample rows and proposes a mapping you can review.',
             },
             {
               mode: 'manual' as const,
@@ -292,7 +292,7 @@ function ImportStep(p: UploadWizardProps) {
         <>
           <Typography>
             Ready to import <b>{ds.rowCount.toLocaleString()}</b> rows from <b>{ds.fileName}</b>. Each row is validated
-            (numbers, units, business units, dates).
+            (numbers, units, dates).
           </Typography>
           <FormControlLabel
             control={<Switch checked={p.onlyValidRows} onChange={(e) => p.onToggleOnlyValid(e.target.checked)} />}

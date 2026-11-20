@@ -61,7 +61,7 @@ export default tseslint.config(
     layer('models'),
     layer('db'),
     { regex: '^(drizzle-orm|pg|@google/genai)(/|$)', message: 'No data/AI access in controllers.' },
-    { regex: '(^|/)lib/gemini', message: 'No AI access in controllers.' },
+    { regex: '(^|/)lib/ai', message: 'No AI access in controllers.' },
   ]),
   apiLayer('services', 'Services hold business logic over repositories; no HTTP or SQL.', [
     layer('controllers'),

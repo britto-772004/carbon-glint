@@ -1,38 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-
-export interface AiTool {
-  name: string;
-  description: string;
-  /** JSON Schema for the arguments object. */
-  parameters: Record<string, unknown>;
-}
-
-export interface AgentResult {
-  text: string;
-  toolCalls: Array<{ name: string; args: Record<string, unknown>; result: unknown }>;
-}
-
-export interface AiClient {
-  /** True when a Gemini API key is configured. */
-  readonly available: boolean;
-  generateText(prompt: string, opts?: { systemInstruction?: string }): Promise<string>;
-  /** Structured output: Gemini returns JSON matching `schema` (an OpenAPI-style schema object). */
-  generateJson<T>(prompt: string, schema: Record<string, unknown>, opts?: { systemInstruction?: string }): Promise<T>;
-  /** Embedding vectors (768-d) for retrieval. */
-  embed(texts: string[], taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY'): Promise<number[][]>;
-  /**
-   * Function-calling loop: the model may call `tools` (executed by `execute`) for up to `maxSteps` rounds,
-   * then returns its final text plus every tool call made.
-   */
-  runAgent(opts: {
-    system: string;
-    history: Array<{ role: 'user' | 'model'; text: string }>;
-    message: string;
-    tools: AiTool[];
-    execute: (name: string, args: Record<string, unknown>) => Promise<unknown>;
-    maxSteps?: number;
-  }): Promise<AgentResult>;
-}
+import { EMBEDDING_DIMENSIONS, type AgentResult, type AiClient } from './types.js';
 
 export const EMBEDDING_MODEL = 'gemini-embedding-001';
 
@@ -40,11 +7,14 @@ export function createGeminiClient(apiKey: string | undefined, model: string): A
   let ai: GoogleGenAI | undefined;
   const getAi = () => {
     if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
-    ai ??= new GoogleGenAI({ apiKey });
+    // The SDK defaults to the stable `v1` endpoint, which rejects function calling (the assistant's tools).
+    ai ??= new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     return ai;
   };
 
   return {
+    provider: 'gemini',
+    model,
     available: Boolean(apiKey),
     async generateText(prompt, opts) {
       const res = await getAi().models.generateContent({
@@ -73,7 +43,7 @@ export function createGeminiClient(apiKey: string | undefined, model: string): A
         const res = await getAi().models.embedContent({
           model: EMBEDDING_MODEL,
           contents: texts.slice(i, i + 50),
-          config: { taskType, outputDimensionality: 768 },
+          config: { taskType, outputDimensionality: EMBEDDING_DIMENSIONS },
         });
         out.push(...(res.embeddings ?? []).map((e) => e.values ?? []));
       }

@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { PasswordField } from '../common/PasswordField';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router';
 import { formValues } from '../../lib/errors';
@@ -65,10 +66,9 @@ export function SignUpForm({ onSubmit, isSubmitting, error, sentTo }: SignUpForm
           slotProps={{ htmlInput: { maxLength: 120 } }}
         />
         <TextField name="email" label="Work email" type="email" required autoComplete="email" />
-        <TextField
+        <PasswordField
           name="password"
           label="Password"
-          type="password"
           required
           autoComplete="new-password"
           helperText="At least 10 characters, with a letter and a number."

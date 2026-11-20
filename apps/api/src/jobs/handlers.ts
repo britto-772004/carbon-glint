@@ -20,6 +20,10 @@ export const createJobHandlers = ({ mailer, services, logger }: JobDeps): JobHan
     logger.info({ ...payload, ...result }, 'emissions calculated');
   },
   'report.generate': (payload) => services.reports.generate(payload),
+  'factors.sync': async (payload) => {
+    const result = await services.factorSync.run(payload.trigger);
+    logger.info({ ...payload, ...result }, 'emission factor sync finished');
+  },
   'assistant.index': async (payload) => {
     const n = await services.assistant.index(payload.tenantId);
     logger.info({ ...payload, chunks: n }, 'assistant index rebuilt');

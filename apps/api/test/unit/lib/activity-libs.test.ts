@@ -77,7 +77,7 @@ describe('spreadsheet parsing', () => {
     const p = await parseSpreadsheet(xlsx, 'xlsx', { sheetName: 'Activities' });
     expect(p.columns[0]).toBe('Activity Description');
     expect(p.rows).toHaveLength(TEMPLATE_ROWS.length);
-    expect(p.rows[0]![3]).toBe('18450');
+    expect(p.rows[0]![2]).toBe('18450');
   });
 
   it('template CSV parses the same', async () => {
@@ -102,7 +102,6 @@ describe('column mapping', () => {
     ]);
     expect(mapping).toEqual({
       description: 'Activity Description',
-      orgUnit: 'Business Unit',
       location: 'Location',
       measure: 'Measure',
       unit: 'Unit',
@@ -127,7 +126,6 @@ describe('column mapping', () => {
       description: 'Particulars',
       measure: 'Qty',
       unit: 'UOM',
-      orgUnit: 'Plant',
       periodStart: 'Invoice Date',
       spend: 'Total Cost (INR)',
     });

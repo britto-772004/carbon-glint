@@ -1,4 +1,4 @@
-import type { ColumnMapping, NewActivityModel, OrgUnitModel, RowError } from '../models/index.js';
+import type { ColumnMapping, NewActivityModel, RowError } from '../models/index.js';
 import { parseDate, parseNumber } from '../lib/parse-values.js';
 import { normalizeUnit } from '../lib/units.js';
 import { MAPPING_FIELDS, REQUIRED_FIELDS } from '../lib/column-mapping.js';
@@ -9,8 +9,8 @@ export interface ImportContext {
   tenantId: string;
   activityDefinitionId: string;
   dataSourceId: string;
-  orgUnits: Pick<OrgUnitModel, 'id' | 'code' | 'name'>[];
-  defaultOrgUnitId: string | null;
+  /** Every imported activity belongs to this business unit (the sheet has no business-unit column). */
+  orgUnitId: string | null;
   periodStart: string;
   periodEnd: string;
 }
@@ -19,21 +19,6 @@ export interface ImportOutcome {
   valid: NewActivityModel[];
   errors: RowError[];
   errorCount: number;
-}
-
-const simplify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
-
-/** Match a cell to an org unit: code, then name (case-insensitive), then punctuation-insensitive, then a unique partial name. */
-export function matchOrgUnit(value: string, units: ImportContext['orgUnits']): string | null {
-  const v = value.trim().toLowerCase();
-  if (!v) return null;
-  const exact = units.find((u) => u.code.toLowerCase() === v) ?? units.find((u) => u.name.toLowerCase() === v);
-  if (exact) return exact.id;
-  const sv = simplify(v);
-  const loose = units.find((u) => simplify(u.code) === sv || simplify(u.name) === sv);
-  if (loose) return loose.id;
-  const partial = units.filter((u) => simplify(u.name).includes(sv) || sv.includes(simplify(u.name)));
-  return partial.length === 1 ? partial[0]!.id : null;
 }
 
 export function missingRequired(mapping: ColumnMapping): string[] {
@@ -78,13 +63,6 @@ export function validateRows(
     const unit = unitRaw ? normalizeUnit(unitRaw) : null;
     if (!unit) fail(rowNo, 'unit', unitRaw ? `Unknown unit "${unitRaw}"` : 'Unit is empty');
 
-    let orgUnitId = ctx.defaultOrgUnitId;
-    const ouRaw = cell(r, 'orgUnit');
-    if (ouRaw) {
-      orgUnitId = matchOrgUnit(ouRaw, ctx.orgUnits);
-      if (!orgUnitId) fail(rowNo, 'orgUnit', `No business unit matches "${ouRaw}"`);
-    }
-
     const psRaw = cell(r, 'periodStart');
     const peRaw = cell(r, 'periodEnd');
     const periodStart = psRaw ? parseDate(psRaw, 'start') : ctx.periodStart;
@@ -114,7 +92,7 @@ export function validateRows(
       location: cell(r, 'location') || null,
       measure: measure!,
       unit: unit!.code,
-      orgUnitId,
+      orgUnitId: ctx.orgUnitId,
       periodStart: periodStart!,
       periodEnd: periodEnd!,
       spend,

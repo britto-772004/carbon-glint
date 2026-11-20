@@ -22,7 +22,8 @@ const DOMAIN_STATUS = new Map<abstract new (...args: never[]) => DomainError, nu
   [ForbiddenError, 403],
   [BusinessRuleError, 422],
   [TooManyRequestsError, 429],
-  [UpstreamError, 502],
+  // 503, not 502: Cloudflare replaces origin 502/504 responses with its own HTML page, hiding our JSON message.
+  [UpstreamError, 503],
 ]);
 
 const statusForDomainError = (err: DomainError): number => {

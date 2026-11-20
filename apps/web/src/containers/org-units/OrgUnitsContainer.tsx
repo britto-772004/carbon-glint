@@ -8,11 +8,12 @@ import {
   updateOrgUnitMutation,
   type OrgUnit,
 } from '@carbon-glint/sdk';
-import type { Edge, Node, NodeChangeset } from '@xyflow/react';
+import type { Edge, Node, NodeChangeset, XYPosition } from '@xyflow/react';
 import type { OrgUnitFormValues } from '../../components/org-units/OrgUnitDialog';
 import type { OrgUnitFlowNode } from '../../components/org-units/OrgUnitNode';
 import { OrgUnitsPage, type OrgView } from '../../components/org-units/OrgUnitsPage';
 import { toErrorMessage } from '../../lib/errors';
+import { paginate, usePagination } from '../../lib/pagination';
 import { descendantsOf, findDropTarget, flattenTree, layoutTree } from '../../lib/org-tree';
 
 type DialogState = { mode: 'create'; parentId: string | null } | { mode: 'edit'; unit: OrgUnit } | null;
@@ -33,11 +34,14 @@ export function OrgUnitsContainer() {
 
   const list = useMemo(() => units.data ?? [], [units.data]);
   const layout = useMemo(() => layoutTree(list), [list]);
+  // Positions the user dragged units to; they win over the auto-layout and survive refetches.
+  const [moved, setMoved] = useState<Record<string, XYPosition>>({});
+  const homeOf = (id: string): XYPosition => moved[id] ?? layout[id] ?? { x: 0, y: 0 };
   const buildNodes = (): OrgUnitFlowNode[] =>
     list.map((unit) => ({
       id: unit.id,
       type: 'orgUnit',
-      position: layout[unit.id] ?? { x: 0, y: 0 },
+      position: homeOf(unit.id),
       data: { unit, isDropTarget: false, ...actions },
     }));
   const [nodes, setNodes] = useState<OrgUnitFlowNode[]>([]);
@@ -51,7 +55,12 @@ export function OrgUnitsContainer() {
 
   const create = useMutation({ ...createOrgUnitMutation(), onSuccess: () => (setDialog(null), refresh()) });
   const update = useMutation({ ...updateOrgUnitMutation(), onSuccess: () => (setDialog(null), refresh()) });
-  const move = useMutation({ ...updateOrgUnitMutation(), onSettled: refresh });
+  const move = useMutation({
+    ...updateOrgUnitMutation(),
+    // A rejected move puts the card back (forces the re-sync above) instead of leaving it on top of the target.
+    onError: () => setSyncedList(undefined),
+    onSettled: refresh,
+  });
   const remove = useMutation({ ...deleteOrgUnitMutation(), onSuccess: () => (setDeleteTarget(undefined), refresh()) });
 
   const nodesWithHighlight = useMemo(
@@ -76,22 +85,31 @@ export function OrgUnitsContainer() {
     !descendantsOf(list, draggedId).has(targetId) &&
     list.find((u) => u.id === draggedId)?.parentId !== targetId;
 
+  const currentPositions = () => Object.fromEntries(nodes.map((n) => [n.id, n.position]));
   const onNodeDrag = (node: Node) => {
-    const target = findDropTarget(node.id, node.position, layout);
+    const target = findDropTarget(node.id, node.position, currentPositions());
     setDropTargetId(validTarget(node.id, target) ? target : null);
   };
   const onNodeDragStop = (node: Node) => {
-    const target = findDropTarget(node.id, node.position, layout);
+    const positions = currentPositions();
+    const target = findDropTarget(node.id, node.position, positions);
     setDropTargetId(null);
     if (validTarget(node.id, target)) {
+      // Dropped on another unit: re-parent it; the unit takes its place in the auto-layout again.
       const parent = list.find((u) => u.id === target)!;
       setNotice(`Moved ${list.find((u) => u.id === node.id)?.name} under ${parent.name}.`);
+      setMoved(({ [node.id]: _dropped, ...rest }) => rest);
       move.mutate({ path: { orgUnitId: node.id }, body: { parentId: target } });
+    } else if (target) {
+      // Dropped on its own parent/descendant: not a valid move, return to where it was.
+      setNodes((ns) => ns.map((n) => (n.id === node.id ? { ...n, position: homeOf(n.id) } : n)));
     } else {
-      setNodes((ns) => ns.map((n) => (n.id === node.id ? { ...n, position: layout[n.id]! } : n)));
+      // Dropped on free space: the unit stays where the user put it.
+      setMoved((m) => ({ ...m, [node.id]: node.position }));
     }
   };
 
+  const pagination = usePagination(list.length);
   const editing = dialog?.mode === 'edit' ? dialog.unit : undefined;
   const excluded = editing ? descendantsOf(list, editing.id) : new Set<string>();
   const submitDialog = (v: OrgUnitFormValues) => {
@@ -113,7 +131,8 @@ export function OrgUnitsContainer() {
       onViewChange={setView}
       onAddRoot={() => setDialog({ mode: 'create', parentId: list.find((u) => u.type === 'hq')?.id ?? null })}
       unitCount={list.length}
-      rows={flattenTree(list)}
+      rows={paginate(flattenTree(list), pagination)}
+      pagination={pagination}
       nodes={nodesWithHighlight}
       edges={edges}
       onNodesChange={(changes: NodeChangeset<OrgUnitFlowNode>) => setNodes((ns) => changes.applyTo(ns))}

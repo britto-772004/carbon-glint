@@ -42,13 +42,15 @@ It's safe to re-run by hand: `sudo bash bootstrap-vm.sh`.
 | Secret   | `VM_KNOWN_HOSTS`                                      | optional, the output of `ssh-keyscan <ip>` (pins the host key) |
 | Secret   | `POSTGRES_PASSWORD`                                   | a strong random value (no `"` or newlines)                     |
 | Secret   | `SESSION_SECRET`                                      | 64+ random characters                                          |
-| Secret   | `GEMINI_API_KEY`                                      | from Google AI Studio                                          |
+| Secret   | `GEMINI_API_KEY` / `OPENAI_API_KEY`                   | key for the provider you select (Google AI Studio / OpenAI)    |
 | Secret   | `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`            | the global super admin, seeded on deploy                       |
 | Secret   | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | SMTP relay on 587 (GCP blocks port 25)                         |
 | Secret   | `CLOUDFLARE_TUNNEL_TOKEN`                             | optional, a named tunnel for a stable hostname                 |
 | Variable | `APP_URL`                                             | public URL used in email links                                 |
 | Variable | `MAIL_FROM`                                           | e.g. `Carbon Glint <no-reply@yourdomain>`                      |
-| Variable | `GEMINI_MODEL`                                        | optional                                                       |
+| Variable | `LLM_PROVIDER`                                        | `gemini` (default) or `openai`                                 |
+| Variable | `LLM_MODEL`                                           | optional model override (else `GEMINI_MODEL` / `OPENAI_MODEL`) |
+| Variable | `GEMINI_MODEL` / `OPENAI_MODEL` / `OPENAI_BASE_URL`   | optional                                                       |
 
 ## 3. Deploy
 

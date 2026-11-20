@@ -23,6 +23,10 @@ x-api: &api
     DATABASE_URL: postgres://carbon:carbon@postgres:5432/carbon_glint
     REDIS_URL: redis://redis:6379
     SESSION_SECRET: local-only-session-secret-do-not-use-in-production-0123456789
+    LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+    LLM_MODEL: ${LLM_MODEL:-}
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     SMTP_HOST: mailpit

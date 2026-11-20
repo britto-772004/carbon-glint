@@ -145,3 +145,19 @@ export const efOverrides = pgTable(
 
 export type EfOverrideModel = typeof efOverrides.$inferSelect;
 export type NewEfOverrideModel = typeof efOverrides.$inferInsert;
+
+/** One run of the periodic emission-factor sync (which published datasets it checked and imported). */
+export const efSyncRuns = pgTable('ef_sync_runs', {
+  id: uuid().primaryKey().defaultRandom(),
+  /** schedule (worker timer) | manual (Settings → Sync now) */
+  trigger: text().notNull(),
+  /** ok | failed */
+  status: text().notNull(),
+  startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp({ withTimezone: true }),
+  /** Source codes newly imported by this run (existing sources are never overwritten). */
+  imported: text().array().notNull().default([]),
+  message: text().notNull().default(''),
+});
+export type EfSyncRunModel = typeof efSyncRuns.$inferSelect;
+export type NewEfSyncRunModel = typeof efSyncRuns.$inferInsert;

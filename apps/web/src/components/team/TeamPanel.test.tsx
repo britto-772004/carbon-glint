@@ -4,7 +4,10 @@ import { buildInvitation, buildUser } from '../../test/fixtures';
 import { renderWithProviders } from '../../test/render';
 import { TeamPanel, type TeamPanelProps } from './TeamPanel';
 
+const pager = { page: 0, rowsPerPage: 10, count: 2, onPageChange: vi.fn(), onRowsPerPageChange: vi.fn() };
 const base: TeamPanelProps = {
+  userPagination: pager,
+  invitationPagination: pager,
   users: [buildUser(), buildUser({ id: 'u2', name: 'Ben', email: 'ben@acme.com' })],
   invitations: [buildInvitation(), buildInvitation({ id: 'i2', email: 'old@acme.com', status: 'revoked' })],
   isLoading: false,

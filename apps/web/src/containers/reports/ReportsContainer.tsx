@@ -9,6 +9,7 @@ import {
 } from '@carbon-glint/sdk';
 import { ReportsPage } from '../../components/reports/ReportsPage';
 import { toErrorMessage } from '../../lib/errors';
+import { paginate, usePagination } from '../../lib/pagination';
 
 export function ReportsContainer() {
   const queryClient = useQueryClient();
@@ -24,11 +25,15 @@ export function ReportsContainer() {
   const create = useMutation({ ...createReportMutation(), onSuccess: refresh });
   const remove = useMutation({ ...deleteReportMutation(), onSuccess: refresh });
 
+  const pagination = usePagination(reports.data?.length ?? 0, 5);
+
   return (
     <ReportsPage
       formats={formats.data ?? []}
       orgUnits={orgUnits.data ?? []}
       reports={reports.data}
+      pageRows={paginate(reports.data ?? [], pagination)}
+      pagination={pagination}
       isLoading={reports.isPending}
       onGenerate={(body) => create.mutate({ body })}
       isGenerating={create.isPending}

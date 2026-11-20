@@ -18,9 +18,15 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { formValues } from '../../lib/errors';
 
+import type { Pagination } from '../../lib/pagination';
+import { TablePager } from '../common/TablePager';
+
 export interface TeamPanelProps {
+  /** The current page of members / invitations. */
   users?: User[];
   invitations?: Invitation[];
+  userPagination: Pagination;
+  invitationPagination: Pagination;
   isLoading: boolean;
   error?: string;
   currentUserId: string;
@@ -79,50 +85,53 @@ export function TeamPanel(props: TeamPanelProps) {
             <Skeleton role="status" height={120} />
           </CardContent>
         ) : (
-          <TableContainer>
-            <Table size="small" aria-label="Team members">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Last sign-in</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(users ?? []).map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      {u.name}
-                      {u.id === currentUserId && (
-                        <Typography component="span" color="text.secondary" variant="body2">
-                          {' '}
-                          (you)
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>{u.email}</TableCell>
-                    <TableCell>
-                      <Chip size="small" label={u.status} color={STATUS_COLOR[u.status]} />
-                    </TableCell>
-                    <TableCell>{u.lastLoginAt ? date(u.lastLoginAt) : '—'}</TableCell>
-                    <TableCell align="right">
-                      {u.id !== currentUserId && u.status !== 'pending' && (
-                        <Button
-                          size="small"
-                          color={u.status === 'active' ? 'error' : 'primary'}
-                          onClick={() => props.onSetUserStatus(u.id, u.status === 'active' ? 'disabled' : 'active')}
-                        >
-                          {u.status === 'active' ? 'Disable' : 'Enable'}
-                        </Button>
-                      )}
-                    </TableCell>
+          <>
+            <TableContainer>
+              <Table size="small" aria-label="Team members">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Last sign-in</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {(users ?? []).map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        {u.name}
+                        {u.id === currentUserId && (
+                          <Typography component="span" color="text.secondary" variant="body2">
+                            {' '}
+                            (you)
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>{u.email}</TableCell>
+                      <TableCell>
+                        <Chip size="small" label={u.status} color={STATUS_COLOR[u.status]} />
+                      </TableCell>
+                      <TableCell>{u.lastLoginAt ? date(u.lastLoginAt) : '—'}</TableCell>
+                      <TableCell align="right">
+                        {u.id !== currentUserId && u.status !== 'pending' && (
+                          <Button
+                            size="small"
+                            color={u.status === 'active' ? 'error' : 'primary'}
+                            onClick={() => props.onSetUserStatus(u.id, u.status === 'active' ? 'disabled' : 'active')}
+                          >
+                            {u.status === 'active' ? 'Disable' : 'Enable'}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePager {...props.userPagination} />
+          </>
         )}
       </Card>
 
@@ -164,6 +173,7 @@ export function TeamPanel(props: TeamPanelProps) {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePager {...props.invitationPagination} />
         </Card>
       )}
     </Stack>

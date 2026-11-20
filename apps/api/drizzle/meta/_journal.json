@@ -71,6 +71,13 @@
       "when": 1795176885030,
       "tag": "0009_assistant",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795198509815,
+      "tag": "0010_ef_sync_runs",
+      "breakpoints": true
     }
   ]
 }

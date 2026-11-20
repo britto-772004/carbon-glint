@@ -70,7 +70,7 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/app/org-units',
     target: 'org-add',
     title: 'Add business units',
-    body: 'Give each unit a short code (e.g. PL1, CHN). Upload sheets use these codes in the “Business Unit” column to assign rows automatically.',
+    body: 'Give each unit a short code (e.g. PL1, CHN). Each activity definition is assigned to one business unit, so sheets don’t need a business-unit column.',
     example: 'orgUnits',
   },
   {
@@ -96,7 +96,7 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/app/activity-definitions',
     target: 'ad-new',
     title: 'Create a definition',
-    body: 'Name it, choose scope and category, set the period and (optionally) a default business unit for rows that don’t name one.',
+    body: 'Name it, choose scope and category, set the period and pick the business unit the data belongs to.',
     example: 'definitions',
   },
   {

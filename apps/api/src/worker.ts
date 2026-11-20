@@ -24,6 +24,14 @@ worker.on('failed', (job, err) =>
 );
 worker.on('ready', () => logger.info({ queue: QUEUE_NAME }, 'worker ready'));
 
+// Periodic emission-factor sync (idempotent schedule; interval from EF_SYNC_INTERVAL_HOURS, 0 disables).
+if (config.EF_SYNC_INTERVAL_HOURS > 0) {
+  runtime.jobs
+    .schedule('factors-sync', 'factors.sync', { trigger: 'schedule' }, config.EF_SYNC_INTERVAL_HOURS * 3_600_000)
+    .then(() => logger.info({ everyHours: config.EF_SYNC_INTERVAL_HOURS }, 'emission factor sync scheduled'))
+    .catch((err) => logger.error({ err }, 'could not schedule emission factor sync'));
+}
+
 const shutdown = async (signal: string) => {
   logger.info({ signal }, 'worker shutting down');
   await worker.close();

@@ -51,7 +51,7 @@ describe('tour data', () => {
       for (const d of ex.definitions) for (const r of d.rows) expect(codes.has(r.orgUnit)).toBe(true);
     }
     const csv = exampleCsv(INDUSTRY_EXAMPLES[0]!.definitions[0]!);
-    expect(csv.split('\n')[0]).toBe('Activity Description,Business Unit,Location,Measure,Unit,Period Start,Period End');
+    expect(csv.split('\n')[0]).toBe('Activity Description,Location,Measure,Unit,Period Start,Period End');
   });
 
   it('every step has a route inside the tenant app', () => {

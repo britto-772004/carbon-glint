@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { EmissionSummary, Heatmap, OrgEmissionNode } from '@carbon-glint/sdk';
@@ -58,14 +58,15 @@ describe('Dashboard', () => {
         ),
       ),
     );
-    const { user } = renderApp('/app/dashboard');
+    renderApp('/app/dashboard');
     expect(await screen.findAllByText('16 t CO₂e')).toHaveLength(2); // total KPI + HQ roll-up in the BU tree
     expect(screen.getAllByText('12 t CO₂e').length).toBeGreaterThanOrEqual(1); // scope 2 KPI (+ top activity)
     expect(screen.getByText('2 need review · 1 unmatched · 0 overridden')).toBeInTheDocument();
     const top = screen.getByRole('list', { name: 'Top emitting activities' });
     expect(within(top).getAllByRole('listitem')[0]).toHaveTextContent('Grid electricity – office');
 
-    await user.click(await screen.findByText('Pune Plant'));
+    // fireEvent: React Flow's d3-drag listens for mousedown, which jsdom's user-event can't complete (no `view`).
+    fireEvent.click(await screen.findByText('Pune Plant'));
     await waitFor(() => expect(summaryCalls).toContain(ORG_UNITS[1]!.id));
     expect(await screen.findByText(/Filtered to Pune Plant/)).toBeInTheDocument();
   });

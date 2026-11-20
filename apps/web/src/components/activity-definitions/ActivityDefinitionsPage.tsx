@@ -17,8 +17,13 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { SCOPES, scopeMeta } from './scope';
 
+import type { Pagination } from '../../lib/pagination';
+import { TablePager } from '../common/TablePager';
+
 export interface ActivityDefinitionsPageProps {
+  /** The current page of definitions. */
   definitions?: ActivityDefinition[];
+  pagination: Pagination;
   isLoading: boolean;
   error?: string;
   scopeFilter: Scope | 'all';
@@ -80,52 +85,55 @@ export function ActivityDefinitionsPage(props: ActivityDefinitionsPageProps) {
             <Button onClick={props.onCreate}>Create your first definition</Button>
           </Stack>
         ) : (
-          <TableContainer>
-            <Table aria-label="Activity definitions">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Scope</TableCell>
-                  <TableCell>GHG category</TableCell>
-                  <TableCell>Period</TableCell>
-                  <TableCell align="right">Data sources</TableCell>
-                  <TableCell align="right">Activities</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {definitions!.map((d) => (
-                  <TableRow key={d.id} hover sx={{ cursor: 'pointer' }} onClick={() => props.onOpen(d.id)}>
-                    <TableCell>
-                      <Typography variant="subtitle2">{d.name}</Typography>
-                      {d.description && (
-                        <Typography variant="caption" color="text.secondary">
-                          {d.description}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        label={scopeMeta(d.scope).short}
-                        color={scopeMeta(d.scope).color}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{d.category.name}</TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      {d.periodStart} → {d.periodEnd}
-                    </TableCell>
-                    <TableCell align="right">{d.dataSourceCount}</TableCell>
-                    <TableCell align="right">{d.activityCount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Chip size="small" label={d.status} color={STATUS_COLOR[d.status]} />
-                    </TableCell>
+          <>
+            <TableContainer>
+              <Table aria-label="Activity definitions">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Scope</TableCell>
+                    <TableCell>GHG category</TableCell>
+                    <TableCell>Period</TableCell>
+                    <TableCell align="right">Data sources</TableCell>
+                    <TableCell align="right">Activities</TableCell>
+                    <TableCell>Status</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {definitions!.map((d) => (
+                    <TableRow key={d.id} hover sx={{ cursor: 'pointer' }} onClick={() => props.onOpen(d.id)}>
+                      <TableCell>
+                        <Typography variant="subtitle2">{d.name}</Typography>
+                        {d.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {d.description}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={scopeMeta(d.scope).short}
+                          color={scopeMeta(d.scope).color}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>{d.category.name}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        {d.periodStart} → {d.periodEnd}
+                      </TableCell>
+                      <TableCell align="right">{d.dataSourceCount}</TableCell>
+                      <TableCell align="right">{d.activityCount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Chip size="small" label={d.status} color={STATUS_COLOR[d.status]} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePager {...props.pagination} />
+          </>
         )}
       </Card>
       {props.dialog}

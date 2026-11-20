@@ -18,6 +18,7 @@ import TableRow from '@mui/material/TableRow';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
+import { chartTooltip } from '../../lib/chart-tooltip';
 import { useChartColors } from '../common/useChartColors';
 import { formatCo2e, pct } from './format';
 
@@ -53,6 +54,7 @@ export function LasagneHeatmap(p: LasagneHeatmapProps) {
     textStyle: { fontFamily: c.fontFamily },
     grid: { left: 8, right: 16, top: 8, bottom: 72, containLabel: true },
     tooltip: {
+      ...chartTooltip(c),
       formatter: (params: { data: [number, number, number | '-'] }) => {
         const [x, y, v] = params.data;
         const row = rows[rows.length - 1 - y]!;

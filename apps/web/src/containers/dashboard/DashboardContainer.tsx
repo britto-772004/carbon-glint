@@ -8,7 +8,7 @@ import {
   listActivityDefinitionsOptions,
   listOrgUnitsOptions,
 } from '@carbon-glint/sdk';
-import type { Edge } from '@xyflow/react';
+import type { Edge, NodeChangeset } from '@xyflow/react';
 import { BuEmissionsTree, type BuFlowNode } from '../../components/dashboard/BuEmissionsTree';
 import { DashboardPage } from '../../components/dashboard/DashboardPage';
 import { KpiCards } from '../../components/dashboard/KpiCards';
@@ -58,7 +58,8 @@ export function DashboardContainer() {
     setPath([]);
   };
 
-  const { nodes, edges } = useMemo(() => {
+  // Auto-layout (top → bottom) for the tree; cards the user dragged keep their position afterwards.
+  const { baseNodes, edges } = useMemo(() => {
     const list = tree.data ?? [];
     const pos = layoutTree(
       list.map((n) => ({
@@ -73,7 +74,7 @@ export function DashboardContainer() {
         active: true,
         createdAt: '',
       })),
-      'LR',
+      'TB',
     );
     const ns: BuFlowNode[] = list.map((n) => ({
       id: n.orgUnitId,
@@ -93,8 +94,21 @@ export function DashboardContainer() {
         target: n.orgUnitId,
         type: 'smoothstep',
       }));
-    return { nodes: ns, edges: es };
+    return { baseNodes: ns, edges: es };
   }, [tree.data, filters.orgUnitId]);
+
+  // Node state lives here so React Flow can move cards; refreshed data/selection keeps their dragged positions.
+  const [nodes, setNodes] = useState<BuFlowNode[]>([]);
+  const [syncedFrom, setSyncedFrom] = useState<BuFlowNode[]>();
+  if (syncedFrom !== baseNodes) {
+    setSyncedFrom(baseNodes);
+    setNodes((prev) =>
+      baseNodes.map((b) => {
+        const existing = prev.find((n) => n.id === b.id);
+        return existing ? { ...existing, data: b.data } : b;
+      }),
+    );
+  }
 
   return (
     <DashboardPage
@@ -145,6 +159,7 @@ export function DashboardContainer() {
         <BuEmissionsTree
           nodes={nodes}
           edges={edges}
+          onNodesChange={(changes: NodeChangeset<BuFlowNode>) => setNodes((ns) => changes.applyTo(ns))}
           isLoading={tree.isPending}
           selectedName={tree.data?.find((n) => n.orgUnitId === filters.orgUnitId)?.name}
           fill

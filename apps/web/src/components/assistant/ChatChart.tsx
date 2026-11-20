@@ -10,6 +10,7 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { chartTooltip } from '../../lib/chart-tooltip';
 import { useChartColors } from '../common/useChartColors';
 import { chartToCsv } from './chat-utils';
 
@@ -30,7 +31,7 @@ export function ChatChart({
   const option = {
     color: PALETTE,
     textStyle: { fontFamily: c.fontFamily },
-    tooltip: { trigger: isPie ? 'item' : 'axis' },
+    tooltip: { ...chartTooltip(c), trigger: isPie ? 'item' : 'axis' },
     legend: { bottom: 0, textStyle: { color: c.textSecondary } },
     grid: { left: 8, right: 8, top: 16, bottom: 40, containLabel: true },
     ...(isPie

@@ -1,5 +1,5 @@
 import type { ActivityModel, EmissionFactorModel, EfSourceModel, GhgCategoryModel } from '../models/index.js';
-import type { AiClient } from '../lib/gemini.js';
+import type { AiClient } from '../lib/ai/index.js';
 import type { FactorHit } from '../repositories/emission-factor.repository.js';
 import { UNITS, findUnit } from '../lib/units.js';
 
@@ -89,6 +89,7 @@ const describe = (f: EmissionFactorModel, s: EfSourceModel) =>
  */
 export async function chooseFactor(ai: AiClient, input: MatchInput, candidates: FactorHit[]): Promise<MatchChoice> {
   const alternatives = candidates.slice(0, 5);
+  let aiFailure: string | undefined;
   if (candidates.length === 0) {
     return {
       hit: null,
@@ -128,8 +129,9 @@ export async function chooseFactor(ai: AiClient, input: MatchInput, candidates: 
         rationale: String(out.rationale ?? '').slice(0, 500),
         alternatives: alternatives.filter((a) => a.factor.id !== hit?.factor.id),
       };
-    } catch {
-      // fall through to search-based choice
+    } catch (err) {
+      // Fall through to the search-based choice, but keep the reason so it shows in the traceability view.
+      aiFailure = err instanceof Error ? err.message.replace(/\s+/g, ' ').slice(0, 160) : 'unknown error';
     }
   }
   const top = candidates[0]!;
@@ -140,8 +142,8 @@ export async function chooseFactor(ai: AiClient, input: MatchInput, candidates: 
     method: 'search',
     confidence: Number(confidence.toFixed(2)),
     rationale: ai.available
-      ? 'AI unavailable — best full-text match used.'
-      : 'Best full-text match (AI not configured).',
+      ? `The AI ranking call failed${aiFailure ? ` (${aiFailure})` : ''}, so the best full-text match was used. Recalculate to retry.`
+      : 'Best full-text match (no AI provider configured).',
     alternatives: alternatives.slice(1),
   };
 }

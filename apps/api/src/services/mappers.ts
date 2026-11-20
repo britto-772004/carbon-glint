@@ -1,6 +1,7 @@
 import type { Schemas } from '@carbon-glint/api-spec';
 import type {
   ActivityModel,
+  ColumnMapping,
   DataSourceModel,
   GhgCategoryModel,
   IndustryModel,
@@ -128,7 +129,10 @@ export const toDataSourceDto = (d: DataSourceModel): Schemas['DataSource'] => ({
   columns: d.columns,
   preview: d.preview,
   rowCount: d.rowCount,
-  mapping: d.mapping,
+  // Sheets uploaded before the business-unit column was dropped may still carry it in the stored mapping.
+  mapping: d.mapping
+    ? (({ orgUnit: _legacy, ...rest }) => rest)(d.mapping as ColumnMapping & { orgUnit?: unknown })
+    : null,
   mappingMode: d.mappingMode,
   status: d.status,
   importedCount: d.importedCount,

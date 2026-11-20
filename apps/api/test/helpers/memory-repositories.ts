@@ -8,6 +8,7 @@ import type {
   ReportModel,
   EfOverrideModel,
   EfSourceModel,
+  EfSyncRunModel,
   EmissionFactorModel,
   ActivityDefinitionModel,
   ActivityModel,
@@ -43,6 +44,7 @@ export interface MemoryStore {
   dataSources: DataSourceModel[];
   activities: ActivityModel[];
   efSources: EfSourceModel[];
+  efSyncRuns: EfSyncRunModel[];
   emissionFactors: EmissionFactorModel[];
   calculations: CalculationModel[];
   efOverrides: EfOverrideModel[];
@@ -98,6 +100,7 @@ export function createMemoryStore(): MemoryStore {
     dataSources: [],
     activities: [],
     efSources: [],
+    efSyncRuns: [],
     emissionFactors: [],
     calculations: [],
     efOverrides: [],
@@ -450,6 +453,25 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
     },
 
     emissionFactors: {
+      async recordSyncRun(run) {
+        const row: EfSyncRunModel = {
+          id: randomUUID(),
+          startedAt: now(),
+          finishedAt: null,
+          imported: [],
+          message: '',
+          ...run,
+        };
+        store.efSyncRuns.push(row);
+        return row;
+      },
+      async lastSyncRun() {
+        // newest start time wins; later inserts win ties
+        return store.efSyncRuns.reduce<EfSyncRunModel | null>(
+          (best, r) => (!best || r.startedAt >= best.startedAt ? r : best),
+          null,
+        );
+      },
       async importDataset({ source, factors }) {
         const old = store.efSources.find((x) => x.code === source.code);
         if (old) {

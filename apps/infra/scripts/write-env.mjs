@@ -10,7 +10,16 @@ if (missing.length) {
 for (const [k, v] of Object.entries(env)) {
   if (typeof v === 'string' && /[\n"]/.test(v) && k === k.toUpperCase() && !k.startsWith('GITHUB_')) {
     // dotenv values can't safely contain newlines or double quotes
-    if (['POSTGRES_PASSWORD', 'SESSION_SECRET', 'GEMINI_API_KEY', 'SMTP_PASS', 'SUPERADMIN_PASSWORD'].includes(k)) {
+    if (
+      [
+        'POSTGRES_PASSWORD',
+        'SESSION_SECRET',
+        'GEMINI_API_KEY',
+        'OPENAI_API_KEY',
+        'SMTP_PASS',
+        'SUPERADMIN_PASSWORD',
+      ].includes(k)
+    ) {
       console.error(`${k} must not contain newlines or double quotes`);
       process.exit(1);
     }
@@ -28,8 +37,14 @@ const values = {
   REDIS_URL: 'redis://127.0.0.1:6379',
   SESSION_SECRET: env.SESSION_SECRET,
   FILES_DIR: '/opt/carbon-glint/shared/files',
+  LLM_PROVIDER: env.LLM_PROVIDER || 'gemini',
+  LLM_MODEL: env.LLM_MODEL ?? '',
   GEMINI_API_KEY: env.GEMINI_API_KEY ?? '',
   GEMINI_MODEL: env.GEMINI_MODEL || 'gemini-2.5-flash',
+  OPENAI_API_KEY: env.OPENAI_API_KEY ?? '',
+  OPENAI_MODEL: env.OPENAI_MODEL || 'gpt-4o-mini',
+  OPENAI_EMBEDDING_MODEL: env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
+  OPENAI_BASE_URL: env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
   SMTP_HOST: env.SMTP_HOST ?? '',
   SMTP_PORT: env.SMTP_PORT || '587',
   SMTP_USER: env.SMTP_USER ?? '',

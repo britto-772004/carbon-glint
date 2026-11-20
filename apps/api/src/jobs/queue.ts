@@ -19,6 +19,9 @@ export function createJobQueue(redisUrl: string): JobQueue & { close(): Promise<
     async enqueue(name, payload, opts) {
       await queue.add(name, payload, opts?.delayMs ? { delay: opts.delayMs } : {});
     },
+    async schedule(id, name, payload, everyMs) {
+      await queue.upsertJobScheduler(id, { every: everyMs }, { name, data: payload });
+    },
     close: () => queue.close(),
   };
 }

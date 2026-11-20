@@ -6,3 +6,8 @@ export const SCOPES: { value: Scope; label: string; short: string; color: 'prima
   { value: 3, label: 'Scope 3 — value chain', short: 'Scope 3', color: 'secondary' },
 ];
 export const scopeMeta = (s: Scope) => SCOPES.find((x) => x.value === s)!;
+
+/** GHG Protocol sequence: "1. Purchased goods…" → "15. Investments"; custom categories (no number) come last. */
+const sequenceOf = (name: string) => Number.parseInt(name, 10) || Number.POSITIVE_INFINITY;
+export const bySequence = <T extends { name: string }>(list: T[]): T[] =>
+  [...list].sort((a, b) => sequenceOf(a.name) - sequenceOf(b.name) || a.name.localeCompare(b.name));

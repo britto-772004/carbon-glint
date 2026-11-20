@@ -14,6 +14,7 @@ import { ActivityDefinitionDialog } from '../../components/activity-definitions/
 import { ActivityDefinitionsPage } from '../../components/activity-definitions/ActivityDefinitionsPage';
 import { ScopeCategoryBoard } from '../../components/activity-definitions/ScopeCategoryBoard';
 import { toErrorMessage } from '../../lib/errors';
+import { paginate, usePagination } from '../../lib/pagination';
 import { useMe } from '../session/useMe';
 
 export function ActivityDefinitionsContainer() {
@@ -50,9 +51,12 @@ export function ActivityDefinitionsContainer() {
   };
   const listed = (definitions.data ?? []).filter((d) => !categoryFilter || d.category.id === categoryFilter);
 
+  const pagination = usePagination(listed.length);
+
   return (
     <ActivityDefinitionsPage
-      definitions={definitions.data ? listed : undefined}
+      definitions={definitions.data ? paginate(listed, pagination) : undefined}
+      pagination={pagination}
       isLoading={definitions.isPending}
       error={toErrorMessage(definitions.error ?? categories.error)}
       scopeFilter={scopeFilter}

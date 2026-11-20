@@ -11,6 +11,8 @@ export interface JobPayloads {
   'report.generate': { tenantId: string; reportId: string };
   /** Rebuild a tenant's assistant knowledge index (embeddings). */
   'assistant.index': { tenantId: string };
+  /** Check for newly published emission-factor datasets and import them (existing ones are never overwritten). */
+  'factors.sync': { trigger: 'schedule' | 'manual' };
 }
 
 export type JobName = keyof JobPayloads;
@@ -18,4 +20,6 @@ export type JobName = keyof JobPayloads;
 /** What services use to schedule background work (no BullMQ types leak into services). */
 export interface JobQueue {
   enqueue<K extends JobName>(name: K, payload: JobPayloads[K], opts?: { delayMs?: number }): Promise<void>;
+  /** Repeat a job every `everyMs` (idempotent: calling again with the same id updates the schedule). */
+  schedule<K extends JobName>(id: string, name: K, payload: JobPayloads[K], everyMs: number): Promise<void>;
 }

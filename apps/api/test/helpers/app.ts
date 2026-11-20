@@ -6,7 +6,7 @@ import { createLogger } from '../../src/lib/logger.js';
 import type { Controllers } from '../../src/openapi/types.js';
 import type { Repositories } from '../../src/repositories/index.js';
 import { createServices, type ServiceDeps, type Services } from '../../src/services/index.js';
-import type { AiClient } from '../../src/lib/gemini.js';
+import type { AiClient } from '../../src/lib/ai/index.js';
 import { fakeAi, fakeJobQueue, fakeRepositories, memoryFiles } from './fakes.js';
 
 export const testConfig = (env: Record<string, string> = {}): Config =>

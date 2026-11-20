@@ -59,7 +59,6 @@ const FIELD_HELP: Record<MappingField, string> = {
   measure: 'the numeric quantity consumed / travelled / purchased — REQUIRED',
   unit: 'unit of the measure (kWh, L, kg, t, km, passenger.km…) — REQUIRED',
   location: 'site / city / country / route',
-  orgUnit: 'business unit, branch, plant or facility code/name',
   periodStart: 'start date of the activity period (or a single date / month)',
   periodEnd: 'end date of the activity period',
   spend: 'money spent (numeric)',
@@ -224,12 +223,17 @@ export const createDataSourceService = ({ repositories: repos, jobs, files, ai }
       if (!ad) return;
       try {
         const parsed = await parseStored(ds, { sheetName: ds.sheetName, headerRow: ds.headerRow });
+        // The sheet carries no business unit: use the definition's, else the company's HQ / top-level unit.
+        const units = await repos.orgUnits.listByTenant(tenantId);
+        const orgUnitId =
+          ad.definition.defaultOrgUnitId ??
+          (units.find((u) => u.type === 'hq') ?? units.find((u) => !u.parentId) ?? units[0])?.id ??
+          null;
         const outcome = validateRows(parsed.columns, parsed.rows, parsed.rowNumbers, ds.mapping as ColumnMapping, {
           tenantId,
           activityDefinitionId: ad.definition.id,
           dataSourceId: ds.id,
-          orgUnits: await repos.orgUnits.listByTenant(tenantId),
-          defaultOrgUnitId: ad.definition.defaultOrgUnitId,
+          orgUnitId,
           periodStart: ad.definition.periodStart,
           periodEnd: ad.definition.periodEnd,
         });

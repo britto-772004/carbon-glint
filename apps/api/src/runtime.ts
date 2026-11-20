@@ -1,7 +1,7 @@
 import type { Config } from './config.js';
 import { createDatabase } from './db/client.js';
 import { createJobQueue } from './jobs/queue.js';
-import { createGeminiClient } from './lib/gemini.js';
+import { createAiClient } from './lib/ai/index.js';
 import type { Logger } from './lib/logger.js';
 import { createRedis } from './lib/redis.js';
 import { createLocalFileStorage } from './lib/storage.js';
@@ -17,13 +17,14 @@ export function createRuntime(config: Config, logger: Logger) {
   const repositories = createRepositories({ db: database.db, redis });
   const services = createServices({
     repositories,
-    ai: createGeminiClient(config.GEMINI_API_KEY, config.GEMINI_MODEL),
+    ai: createAiClient(config),
     jobs,
     files: createLocalFileStorage(config.FILES_DIR),
     config,
   });
   return {
     services,
+    jobs,
     close: () => Promise.allSettled([database.close(), jobs.close(), redis.quit()]),
   };
 }

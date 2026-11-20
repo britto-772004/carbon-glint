@@ -1,6 +1,14 @@
 import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { DbExecutor } from '../db/client.js';
-import { efSources, emissionFactors, type EfSourceModel, type EmissionFactorModel } from '../models/index.js';
+import {
+  efSources,
+  efSyncRuns,
+  emissionFactors,
+  type EfSourceModel,
+  type EfSyncRunModel,
+  type EmissionFactorModel,
+  type NewEfSyncRunModel,
+} from '../models/index.js';
 import type { ParsedDataset } from '../ef/types.js';
 
 export interface FactorHit {
@@ -26,6 +34,9 @@ export interface EmissionFactorRepository {
   /** Replaces a dataset version atomically (idempotent re-import). Returns factor count. */
   importDataset(dataset: ParsedDataset): Promise<number>;
   listSources(): Promise<EfSourceModel[]>;
+  /** Sync bookkeeping for the periodic factor-database sync. */
+  recordSyncRun(run: NewEfSyncRunModel): Promise<EfSyncRunModel>;
+  lastSyncRun(): Promise<EfSyncRunModel | null>;
   findById(id: string): Promise<{ factor: EmissionFactorModel; source: EfSourceModel } | null>;
   findManyByIds(ids: string[]): Promise<Array<{ factor: EmissionFactorModel; source: EfSourceModel }>>;
   /** Full-text + trigram ranking (ts_rank_cd × 0.6 + max(similarity, word_similarity) × 0.4). */
@@ -56,6 +67,16 @@ export const createEmissionFactorRepository = (db: DbExecutor): EmissionFactorRe
   },
 
   listSources: () => db.select().from(efSources).orderBy(desc(efSources.year), efSources.code),
+
+  async recordSyncRun(run) {
+    const [row] = await db.insert(efSyncRuns).values(run).returning();
+    return row!;
+  },
+
+  async lastSyncRun() {
+    const [row] = await db.select().from(efSyncRuns).orderBy(desc(efSyncRuns.startedAt)).limit(1);
+    return row ?? null;
+  },
 
   async findById(id) {
     const [row] = await db

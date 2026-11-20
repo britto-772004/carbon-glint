@@ -18,9 +18,12 @@ import type { OrgUnitFlowNode } from './OrgUnitNode';
 import { OrgUnitTable } from './OrgUnitTable';
 import type { OrgUnitActions } from './types';
 
+import type { Pagination } from '../../lib/pagination';
+
 export type OrgView = 'chart' | 'table';
 
 export interface OrgUnitsPageProps extends OrgUnitActions {
+  pagination: Pagination;
   isLoading: boolean;
   error?: string;
   notice?: string;
@@ -83,7 +86,13 @@ export function OrgUnitsPage(props: OrgUnitsPageProps) {
           onNodeDragStop={props.onNodeDragStop}
         />
       ) : (
-        <OrgUnitTable rows={props.rows} onAddChild={props.onAddChild} onEdit={props.onEdit} onDelete={props.onDelete} />
+        <OrgUnitTable
+          rows={props.rows}
+          pagination={props.pagination}
+          onAddChild={props.onAddChild}
+          onEdit={props.onEdit}
+          onDelete={props.onDelete}
+        />
       )}
 
       <OrgUnitDialog {...props.dialog} />

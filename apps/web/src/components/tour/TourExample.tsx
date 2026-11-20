@@ -90,7 +90,6 @@ export function TourExample({ kind, example: ex, onDownload }: TourExampleProps)
               <TableHead>
                 <TableRow>
                   <TableCell>Activity Description</TableCell>
-                  <TableCell>BU</TableCell>
                   <TableCell align="right">Measure</TableCell>
                   <TableCell>Unit</TableCell>
                 </TableRow>
@@ -99,7 +98,6 @@ export function TourExample({ kind, example: ex, onDownload }: TourExampleProps)
                 {first.rows.map((r, i) => (
                   <TableRow key={i}>
                     <TableCell>{r.description}</TableCell>
-                    <TableCell>{r.orgUnit}</TableCell>
                     <TableCell align="right">{r.measure.toLocaleString()}</TableCell>
                     <TableCell>{r.unit}</TableCell>
                   </TableRow>

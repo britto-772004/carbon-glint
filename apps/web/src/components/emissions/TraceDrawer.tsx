@@ -182,7 +182,7 @@ export function TraceDrawer({
           {t.match && !t.override && (
             <Node
               icon={<SearchRounded sx={{ fontSize: 15 }} />}
-              title={`Factor match — ${t.match.method === 'ai' ? 'AI (Gemini)' : t.match.method === 'search' ? 'full-text search' : 'none'}`}
+              title={`Factor match — ${t.match.method === 'ai' ? 'AI-assisted' : t.match.method === 'search' ? 'full-text search' : 'none'}`}
             >
               Confidence {Math.round((t.match.confidence ?? 0) * 100)}% — {t.match.rationale}
               {t.match.alternatives.length > 0 && (

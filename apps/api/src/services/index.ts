@@ -1,5 +1,5 @@
 import type { Config } from '../config.js';
-import type { AiClient } from '../lib/gemini.js';
+import type { AiClient } from '../lib/ai/index.js';
 import type { JobQueue } from '../jobs/types.js';
 import type { FileStorage } from '../lib/storage.js';
 import type { Repositories } from '../repositories/index.js';
@@ -9,6 +9,7 @@ import { createTaxonomyService, type TaxonomyService } from './taxonomy.service.
 import { createCalculationService, type CalculationService } from './calculation.service.js';
 import { createEmissionsService, type EmissionsService } from './emissions.service.js';
 import { createReportService, type ReportService } from './report.service.js';
+import { createFactorSyncService, type FactorSyncService } from './factor-sync.service.js';
 import { createAssistantService, type AssistantService } from './assistant.service.js';
 import { createAuthService, type AuthService } from './auth.service.js';
 import { createHealthService, type HealthService } from './health.service.js';
@@ -41,6 +42,7 @@ export interface Services {
   emissions: EmissionsService;
   reports: ReportService;
   assistant: AssistantService;
+  factorSync: FactorSyncService;
 }
 
 export const createServices = (deps: ServiceDeps): Services => {
@@ -61,5 +63,6 @@ export const createServices = (deps: ServiceDeps): Services => {
     emissions,
     reports: createReportService(deps),
     assistant: createAssistantService(deps, emissions),
+    factorSync: createFactorSyncService(deps),
   };
 };

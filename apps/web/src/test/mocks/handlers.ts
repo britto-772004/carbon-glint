@@ -66,6 +66,9 @@ export const handlers = [
   ),
   http.get(apiUrl('/emissions/org-tree'), () => HttpResponse.json([])),
   http.get(apiUrl('/emission-factors/sources'), () => HttpResponse.json([])),
+  http.get(apiUrl('/emission-factors/sync'), () =>
+    HttpResponse.json({ intervalHours: 168, nextRunAt: null, lastRun: null }),
+  ),
   http.get(apiUrl('/ghg-categories'), () => HttpResponse.json<GhgCategory[]>(CATEGORIES)),
   http.get(apiUrl('/activity-definitions'), ({ request }) => {
     const scope = new URL(request.url).searchParams.get('scope');

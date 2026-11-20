@@ -572,9 +572,9 @@ const csvCell = (v: string | number) => {
 
 /** A ready-to-upload CSV (same headers as the official template) for one example definition. */
 export function exampleCsv(d: ExampleDefinition, periodStart = '2026-01-01', periodEnd = '2026-03-31'): string {
-  const header = ['Activity Description', 'Business Unit', 'Location', 'Measure', 'Unit', 'Period Start', 'Period End'];
+  const header = ['Activity Description', 'Location', 'Measure', 'Unit', 'Period Start', 'Period End'];
   const lines = d.rows.map((r) =>
-    [r.description, r.orgUnit, r.location, r.measure, r.unit, periodStart, periodEnd].map(csvCell).join(','),
+    [r.description, r.location, r.measure, r.unit, periodStart, periodEnd].map(csvCell).join(','),
   );
   return [header.join(','), ...lines].join('\n') + '\n';
 }

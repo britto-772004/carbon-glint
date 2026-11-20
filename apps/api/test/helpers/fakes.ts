@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { vi } from 'vitest';
 import type { JobPayloads, JobQueue } from '../../src/jobs/types.js';
-import type { AiClient } from '../../src/lib/gemini.js';
+import type { AiClient } from '../../src/lib/ai/index.js';
 import type { Mailer } from '../../src/lib/mailer.js';
 import type { Repositories } from '../../src/repositories/index.js';
 import { createMemoryRepositories, type MemoryStore } from './memory-repositories.js';
@@ -31,6 +31,7 @@ export const fakeJobQueue = () => {
   });
   return {
     enqueue: enqueue as unknown as JobQueue['enqueue'] & typeof enqueue,
+    schedule: vi.fn(async () => undefined) as unknown as JobQueue['schedule'],
     enqueued,
     sent: <K extends keyof JobPayloads>(name: K) =>
       enqueued.filter((j) => j.name === name).map((j) => j.payload as JobPayloads[K]),
@@ -65,6 +66,8 @@ export const fakeEmbedding = (text: string): number[] => {
  */
 export const fakeAi = (reply = '', json: unknown = null) => {
   const ai = {
+    provider: 'gemini' as const,
+    model: 'fake',
     available: json !== null || reply !== '',
     generateText: vi.fn(async () => reply),
     generateJson: vi.fn(async (_prompt?: string, _schema?: unknown, _opts?: unknown): Promise<unknown> => json),

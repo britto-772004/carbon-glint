@@ -5,6 +5,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
+import { chartTooltip } from '../../lib/chart-tooltip';
 import { useChartColors } from '../common/useChartColors';
 import { formatCo2e } from '../emissions/format';
 
@@ -30,7 +31,7 @@ export function ScopeTrendChart({ data, isLoading }: { data?: Heatmap; isLoading
             notMerge
             option={{
               textStyle: { fontFamily: c.fontFamily },
-              tooltip: { trigger: 'axis', valueFormatter: (v: number) => formatCo2e(v) },
+              tooltip: { ...chartTooltip(c), trigger: 'axis', valueFormatter: (v: number) => formatCo2e(v) },
               legend: { bottom: 0, textStyle: { color: c.textSecondary } },
               grid: { left: 8, right: 8, top: 16, bottom: 40, containLabel: true },
               xAxis: { type: 'category', data: data.columns },

@@ -51,7 +51,6 @@ export interface ColumnMapping {
   measure: string | null;
   unit: string | null;
   location: string | null;
-  orgUnit: string | null;
   periodStart: string | null;
   periodEnd: string | null;
   spend: string | null;

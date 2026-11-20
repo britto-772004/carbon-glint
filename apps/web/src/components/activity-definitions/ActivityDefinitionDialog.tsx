@@ -13,7 +13,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { formValues } from '../../lib/errors';
-import { SCOPES } from './scope';
+import { SCOPES, bySequence } from './scope';
 
 export interface ActivityDefinitionFormValues {
   name: string;
@@ -47,9 +47,9 @@ const year = new Date().getFullYear();
 
 export function ActivityDefinitionDialog(props: ActivityDefinitionDialogProps) {
   const { open, scope, categories } = props;
-  const recommended = categories.filter((c) => c.recommended);
-  const others = categories.filter((c) => !c.recommended && !c.custom);
-  const custom = categories.filter((c) => c.custom);
+  const recommended = bySequence(categories.filter((c) => c.recommended));
+  const others = bySequence(categories.filter((c) => !c.recommended && !c.custom));
+  const custom = bySequence(categories.filter((c) => c.custom));
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -152,10 +152,10 @@ export function ActivityDefinitionDialog(props: ActivityDefinitionDialogProps) {
                 </Stack>
                 <TextField
                   name="defaultOrgUnitId"
-                  label="Default business unit"
+                  label="Business unit"
                   select
                   defaultValue=""
-                  helperText="Used for rows without a business unit column."
+                  helperText="All rows uploaded to this definition belong to this unit (defaults to HQ)."
                 >
                   <MenuItem value="">— None —</MenuItem>
                   {props.orgUnits.map((u) => (

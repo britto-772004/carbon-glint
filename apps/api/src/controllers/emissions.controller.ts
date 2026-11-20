@@ -13,10 +13,25 @@ const filters = (q: EmissionQuery): EmissionQuery => ({
   to: q.to,
 });
 
-export const createEmissionsControllers = ({ emissions }: Services) => {
+export const createEmissionsControllers = ({ emissions, factorSync }: Services) => {
   const listEmissionFactorSources: Controller<'listEmissionFactorSources'> = async (_req, res, next) => {
     try {
       res.status(200).json(await emissions.listSources());
+    } catch (err) {
+      next(err);
+    }
+  };
+  const getEmissionFactorSyncStatus: Controller<'getEmissionFactorSyncStatus'> = async (_req, res, next) => {
+    try {
+      res.status(200).json(await factorSync.status());
+    } catch (err) {
+      next(err);
+    }
+  };
+  const syncEmissionFactors: Controller<'syncEmissionFactors'> = async (_req, res, next) => {
+    try {
+      await factorSync.requestSync();
+      res.status(202).end();
     } catch (err) {
       next(err);
     }
@@ -102,6 +117,8 @@ export const createEmissionsControllers = ({ emissions }: Services) => {
   };
   return {
     listEmissionFactorSources,
+    getEmissionFactorSyncStatus,
+    syncEmissionFactors,
     searchEmissionFactors,
     getEmissionFactor,
     listEmissions,

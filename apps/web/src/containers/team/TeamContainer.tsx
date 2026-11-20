@@ -10,6 +10,7 @@ import {
   updateUserMutation,
 } from '@carbon-glint/sdk';
 import { TeamPanel } from '../../components/team/TeamPanel';
+import { paginate, usePagination } from '../../lib/pagination';
 import { toErrorMessage } from '../../lib/errors';
 import { useMe } from '../session/useMe';
 
@@ -29,10 +30,15 @@ export function TeamContainer() {
   const resend = useMutation({ ...resendInvitationMutation(), onSuccess: refresh });
   const setStatus = useMutation({ ...updateUserMutation(), onSuccess: refresh });
 
+  const userPagination = usePagination(users.data?.length ?? 0);
+  const invitationPagination = usePagination(invitations.data?.length ?? 0);
+
   return (
     <TeamPanel
-      users={users.data}
-      invitations={invitations.data}
+      users={users.data ? paginate(users.data, userPagination) : undefined}
+      invitations={invitations.data ? paginate(invitations.data, invitationPagination) : undefined}
+      userPagination={userPagination}
+      invitationPagination={invitationPagination}
       isLoading={users.isPending || invitations.isPending}
       error={toErrorMessage(users.error ?? invitations.error ?? setStatus.error ?? revoke.error ?? resend.error)}
       currentUserId={me?.user.id ?? ''}

@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { PasswordField } from '../common/PasswordField';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router';
 import { formValues } from '../../lib/errors';
@@ -65,7 +66,7 @@ export function LoginForm({
           </Alert>
         )}
         <TextField name="email" label="Work email" type="email" required autoComplete="email" />
-        <TextField name="password" label="Password" type="password" required autoComplete="current-password" />
+        <PasswordField name="password" label="Password" required autoComplete="current-password" />
         <Button type="submit" variant="contained" size="large" loading={isSubmitting}>
           Sign in
         </Button>

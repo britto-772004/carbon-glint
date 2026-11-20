@@ -6,7 +6,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
+import { PasswordField } from '../common/PasswordField';
 import { formValues } from '../../lib/errors';
 
 export interface ChangePasswordDialogProps {
@@ -48,17 +48,10 @@ export function ChangePasswordDialog({
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               {error && <Alert severity="error">{error}</Alert>}
-              <TextField
-                name="currentPassword"
-                label="Current password"
-                type="password"
-                required
-                autoComplete="current-password"
-              />
-              <TextField
+              <PasswordField name="currentPassword" label="Current password" required autoComplete="current-password" />
+              <PasswordField
                 name="newPassword"
                 label="New password"
-                type="password"
                 required
                 autoComplete="new-password"
                 helperText="At least 10 characters, with a letter and a number."

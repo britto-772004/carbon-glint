@@ -11,7 +11,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { SCOPES } from './scope';
+import { SCOPES, bySequence } from './scope';
 
 export interface ScopeCategoryBoardProps {
   industryName?: string;
@@ -52,8 +52,9 @@ export function ScopeCategoryBoard(p: ScopeCategoryBoardProps) {
           const recommended = all.filter((c) => c.recommended);
           const rest = all.filter((c) => !c.recommended);
           const expanded = p.expandedScopes.includes(s.value);
-          const ordered = [...recommended, ...rest];
-          const shown = expanded ? ordered : ordered.slice(0, Math.max(VISIBLE, recommended.length));
+          // Always in GHG Protocol sequence (1, 2, 3 …); collapsed view keeps the first few plus every recommended one.
+          const ordered = bySequence([...recommended, ...rest]);
+          const shown = expanded ? ordered : ordered.filter((c, i) => i < VISIBLE || c.recommended);
           return (
             <Grid key={s.value} size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%', borderTop: 4, borderTopColor: ACCENT[s.value] }}>

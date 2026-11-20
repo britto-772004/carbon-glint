@@ -17,6 +17,13 @@ describe('loadConfig', () => {
     expect(c.SMTP_PORT).toBe(587);
   });
 
+  it('defaults to gemini and accepts openai via LLM_PROVIDER', () => {
+    expect(loadConfig(base).LLM_PROVIDER).toBe('gemini');
+    expect(loadConfig({ ...base, LLM_PROVIDER: 'openai' }).LLM_PROVIDER).toBe('openai');
+    expect(loadConfig({ ...base, LLM_PROVIDER: '' }).LLM_PROVIDER).toBe('gemini');
+    expect(() => loadConfig({ ...base, LLM_PROVIDER: 'llama' })).toThrow('Invalid environment configuration');
+  });
+
   it('fails fast on invalid configuration', () => {
     expect(() => loadConfig({ DATABASE_URL: 'not-a-url' })).toThrow('Invalid environment configuration');
   });

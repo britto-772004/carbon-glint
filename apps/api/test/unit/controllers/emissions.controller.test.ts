@@ -11,7 +11,6 @@ const MAPPING = {
   measure: 'Measure',
   unit: 'Unit',
   location: 'Location',
-  orgUnit: 'Business Unit',
   periodStart: 'Period Start',
   periodEnd: 'Period End',
   spend: 'Spend',
