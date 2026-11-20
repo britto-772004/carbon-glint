@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { REPORT_FORMATS } from '../../../src/reports/formats.js';
 import { drainJobs, publishedScenario } from '../../helpers/published.js';
 
-const binary = (res: NodeJS.ReadableStream, cb: (err: Error | null, body: Buffer) => void) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- supertest's parser types
+const binary = (res: any, cb: (err: Error | null, body: Buffer) => void) => {
   const chunks: Buffer[] = [];
   res.on('data', (c: Buffer) => chunks.push(c));
   res.on('end', () => cb(null, Buffer.concat(chunks)));
