@@ -199,7 +199,9 @@ describe('data source upload → mapping → import', () => {
       .send({ scope: 3, categoryId: TRAVEL.id })
       .expect(422);
     expect(locked.body.code).toBe('DEFINITION_LOCKED');
-    await agent.delete(`/api/activity-definitions/${ad.id}`).expect(409);
+    // a published definition can be deleted too, taking its activities and emissions with it
+    await agent.delete(`/api/activity-definitions/${ad.id}`).expect(204);
+    await agent.get(`/api/activity-definitions/${ad.id}`).expect(404);
   });
 
   it('aborts on invalid rows unless onlyValidRows, reporting row numbers', async () => {

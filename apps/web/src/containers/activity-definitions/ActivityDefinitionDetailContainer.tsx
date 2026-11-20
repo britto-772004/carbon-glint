@@ -45,6 +45,7 @@ export function ActivityDefinitionDetailContainer() {
   const [notice, setNotice] = useState<string>();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteDefinitionOpen, setDeleteDefinitionOpen] = useState(false);
   const [recalcOpen, setRecalcOpen] = useState(false);
   const [resetOverrides, setResetOverrides] = useState(false);
 
@@ -116,7 +117,13 @@ export function ActivityDefinitionDetailContainer() {
   });
   const removeAd = useMutation({
     ...deleteActivityDefinitionMutation(),
-    onSuccess: () => navigate('/app/activity-definitions'),
+    onSuccess: () => {
+      refreshEmissions();
+      void queryClient.invalidateQueries({
+        predicate: (q) => (q.queryKey[0] as { _id?: string } | undefined)?._id === 'listActivityDefinitions',
+      });
+      navigate('/app/activity-definitions');
+    },
   });
   const removeDs = useMutation({ ...deleteDataSourceMutation(), onSuccess: refresh });
   const removeActivities = useMutation({
@@ -200,7 +207,11 @@ export function ActivityDefinitionDetailContainer() {
       onDeleteSelected={() => removeActivities.mutate({ path, body: { activityIds: selectedIds } })}
       isDeleting={removeActivities.isPending}
       notice={notice}
+      deleteDefinitionOpen={deleteDefinitionOpen}
+      onOpenDeleteDefinition={() => setDeleteDefinitionOpen(true)}
+      onCloseDeleteDefinition={() => setDeleteDefinitionOpen(false)}
       onDelete={() => removeAd.mutate({ path })}
+      isDeletingDefinition={removeAd.isPending}
       onAddDataSource={() => setWizardOpen(true)}
       onDeleteDataSource={(dataSourceId) => removeDs.mutate({ path: { dataSourceId } })}
       wizard={

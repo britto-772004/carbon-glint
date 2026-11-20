@@ -82,7 +82,7 @@ export function buildReportData(
         orgUnit: r.orgUnitName ?? '—',
         measure: `${r.measure.toLocaleString('en')} ${r.unit}`,
         factor: r.factor
-          ? `${r.factor.co2ePerUnit} kg/${r.factor.unit} (${r.factor.sourceCode})`
+          ? `${r.factor.co2ePerUnit} kg/${r.factor.unit}`
           : r.status === 'overridden'
             ? 'Manual override'
             : '—',

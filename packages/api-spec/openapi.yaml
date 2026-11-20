@@ -787,7 +787,7 @@ paths:
     delete:
       operationId: deleteActivityDefinition
       tags: [activities]
-      summary: Delete a draft Activity Definition and its data
+      summary: Delete an Activity Definition (draft or published) with its data sources, activities and calculated emissions
       security:
         - cookieAuth: [admin]
       parameters:

@@ -21,7 +21,7 @@ export function useChartColors() {
     fontFamily: theme.typography.fontFamily,
     heat:
       scheme === 'dark'
-        ? ['#123b37', '#14665e', '#14b8a6', '#5eead4', '#ccfbf1']
-        : ['#ecfdf5', '#a7f3d0', '#34d399', '#0f766e', '#134e4a'],
+        ? ['#1e3a8a', '#0e7490', '#16a34a', '#eab308', '#f97316', '#ef4444']
+        : ['#3b82f6', '#06b6d4', '#22c55e', '#facc15', '#f97316', '#dc2626'],
   };
 }

@@ -1,5 +1,5 @@
 import type { Schemas } from '@carbon-glint/api-spec';
-import { BusinessRuleError, ConflictError, NotFoundError } from '../errors/domain-errors.js';
+import { BusinessRuleError, NotFoundError } from '../errors/domain-errors.js';
 import type { ServiceDeps } from './index.js';
 import { toActivityDefinitionDto, toActivityDto, toDataSourceDto } from './mappers.js';
 import { requireTenantId } from './tenant.service.js';
@@ -106,12 +106,11 @@ export const createActivityDefinitionService = ({
     async remove(actor, id) {
       const tenantId = requireTenantId(actor);
       const { definition } = await load(tenantId, id);
-      if (definition.status !== 'draft') {
-        throw new ConflictError('Only draft definitions can be deleted.', { code: 'DEFINITION_PUBLISHED' });
-      }
       const sources = await repos.dataSources.listByDefinition(tenantId, id);
       await repos.activityDefinitions.delete(tenantId, id);
       await Promise.all(sources.map((s) => files.remove(s.fileKey)));
+      // Published definitions carry calculated emissions (removed with them): refresh what the assistant knows.
+      if (definition.status === 'published') await jobs.enqueue('assistant.index', { tenantId }, { delayMs: 60_000 });
     },
 
     async publish(actor, id) {

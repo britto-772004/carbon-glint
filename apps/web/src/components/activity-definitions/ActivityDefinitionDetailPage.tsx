@@ -55,7 +55,12 @@ export interface ActivityDefinitionDetailPageProps {
   isDeleting: boolean;
   actionError?: string;
   notice?: string;
+  /** Delete the whole definition (with confirmation). */
+  deleteDefinitionOpen: boolean;
+  onOpenDeleteDefinition: () => void;
+  onCloseDeleteDefinition: () => void;
   onDelete: () => void;
+  isDeletingDefinition: boolean;
   onAddDataSource: () => void;
   onDeleteDataSource: (id: string) => void;
   wizard: ReactNode;
@@ -95,11 +100,9 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
           {d.description && <Typography color="text.secondary">{d.description}</Typography>}
         </Stack>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-          {d.status === 'draft' && (
-            <Button color="error" onClick={p.onDelete}>
-              Delete
-            </Button>
-          )}
+          <Button color="error" onClick={p.onOpenDeleteDefinition}>
+            Delete
+          </Button>
           <Button variant="outlined" onClick={p.onAddDataSource}>
             Add data source
           </Button>
@@ -254,6 +257,24 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
         />
       </Card>
       {p.wizard}
+
+      <Dialog open={p.deleteDefinitionOpen} onClose={p.onCloseDeleteDefinition} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete “{d.name}”?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This permanently removes the definition, its {d.dataSourceCount} data source
+            {d.dataSourceCount === 1 ? '' : 's'} and {d.activityCount.toLocaleString()} activities
+            {d.status === 'published' ? ', and its calculated emissions disappear from the dashboard and reports' : ''}.
+            This cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={p.onCloseDeleteDefinition}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={p.onDelete} loading={p.isDeletingDefinition}>
+            Delete definition
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={p.deleteOpen} onClose={p.onCloseDelete} maxWidth="xs" fullWidth>
         <DialogTitle>Delete {p.selectedIds.length} activities?</DialogTitle>
