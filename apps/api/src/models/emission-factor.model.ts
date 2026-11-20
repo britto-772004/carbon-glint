@@ -114,3 +114,34 @@ export type EmissionFactorModel = typeof emissionFactors.$inferSelect;
 export type NewEmissionFactorModel = typeof emissionFactors.$inferInsert;
 export type CalculationModel = typeof calculations.$inferSelect;
 export type NewCalculationModel = typeof calculations.$inferInsert;
+
+export const overrideType = pgEnum('override_type', ['factor', 'custom_factor', 'custom_result']);
+
+/** Audit history of manual emission overrides per activity (latest non-reverted one is in effect). */
+export const efOverrides = pgTable(
+  'ef_overrides',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    activityId: uuid()
+      .notNull()
+      .references(() => activities.id, { onDelete: 'cascade' }),
+    type: overrideType().notNull(),
+    factorId: uuid().references(() => emissionFactors.id, { onDelete: 'set null' }),
+    value: numeric({ precision: 24, scale: 10, mode: 'number' }),
+    unit: text(),
+    citation: text(),
+    reason: text().notNull(),
+    previousCo2eKg: numeric({ precision: 24, scale: 6, mode: 'number' }),
+    newCo2eKg: numeric({ precision: 24, scale: 6, mode: 'number' }).notNull(),
+    createdBy: uuid().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    revertedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [index('ef_overrides_activity_idx').on(t.activityId)],
+);
+
+export type EfOverrideModel = typeof efOverrides.$inferSelect;
+export type NewEfOverrideModel = typeof efOverrides.$inferInsert;

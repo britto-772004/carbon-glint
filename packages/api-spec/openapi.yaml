@@ -32,6 +32,8 @@ tags:
     description: Business units (branches, plants, campuses) as a tree
   - name: activities
     description: GHG taxonomy, Activity Definitions, data sources and activity rows
+  - name: emissions
+    description: Emission factor library, calculated emissions, traceability, overrides and aggregations
 # Default: public. Protected operations declare `security` explicitly.
 # cookieAuth "scopes" are roles: [] = any signed-in user, [admin] = tenant admin, [superadmin] = platform operator.
 security: []
@@ -1020,6 +1022,306 @@ paths:
                 type: string
         default:
           $ref: '#/components/responses/Error'
+  /emission-factors/sources:
+    get:
+      operationId: listEmissionFactorSources
+      tags: [emissions]
+      summary: Loaded emission factor databases
+      security:
+        - cookieAuth: [admin]
+      responses:
+        '200':
+          description: Sources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmissionFactorSource'
+        default:
+          $ref: '#/components/responses/Error'
+  /emission-factors/search:
+    get:
+      operationId: searchEmissionFactors
+      tags: [emissions]
+      summary: Full-text + fuzzy search in the factor library
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - name: unit
+          in: query
+          description: Only factors convertible from this activity unit
+          schema:
+            type: string
+        - name: scope
+          in: query
+          schema:
+            $ref: '#/components/schemas/Scope'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Ranked factors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FactorSearchHit'
+        default:
+          $ref: '#/components/responses/Error'
+  /emission-factors/{factorId}:
+    get:
+      operationId: getEmissionFactor
+      tags: [emissions]
+      summary: One emission factor
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - name: factorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Factor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionFactor'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /emissions:
+    get:
+      operationId: listEmissions
+      tags: [emissions]
+      summary: Calculated emissions per activity (filterable)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ScopeFilter'
+        - $ref: '#/components/parameters/CategoryFilter'
+        - $ref: '#/components/parameters/AdFilter'
+        - $ref: '#/components/parameters/OrgUnitFilter'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/FromFilter'
+        - $ref: '#/components/parameters/ToFilter'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Page of emissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /emissions/summary:
+    get:
+      operationId: getEmissionsSummary
+      tags: [emissions]
+      summary: KPI totals for the filters
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ScopeFilter'
+        - $ref: '#/components/parameters/CategoryFilter'
+        - $ref: '#/components/parameters/AdFilter'
+        - $ref: '#/components/parameters/OrgUnitFilter'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/FromFilter'
+        - $ref: '#/components/parameters/ToFilter'
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionSummary'
+        default:
+          $ref: '#/components/responses/Error'
+  /emissions/heatmap:
+    get:
+      operationId: getEmissionsHeatmap
+      tags: [emissions]
+      summary: 'Lasagne heatmap — rows = group, columns = time buckets'
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ScopeFilter'
+        - $ref: '#/components/parameters/CategoryFilter'
+        - $ref: '#/components/parameters/AdFilter'
+        - $ref: '#/components/parameters/OrgUnitFilter'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/FromFilter'
+        - $ref: '#/components/parameters/ToFilter'
+        - name: groupBy
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/HeatmapGroupBy'
+        - name: bucket
+          in: query
+          schema:
+            type: string
+            enum: [month, quarter, year]
+            default: month
+      responses:
+        '200':
+          description: Heatmap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Heatmap'
+        default:
+          $ref: '#/components/responses/Error'
+  /emissions/org-tree:
+    get:
+      operationId: getEmissionsOrgTree
+      tags: [emissions]
+      summary: Business unit tree with own and rolled-up emissions per scope
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ScopeFilter'
+        - $ref: '#/components/parameters/CategoryFilter'
+        - $ref: '#/components/parameters/AdFilter'
+        - $ref: '#/components/parameters/OrgUnitFilter'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/FromFilter'
+        - $ref: '#/components/parameters/ToFilter'
+      responses:
+        '200':
+          description: Org tree
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrgEmissionNode'
+        default:
+          $ref: '#/components/responses/Error'
+  /emissions/{activityId}/trace:
+    get:
+      operationId: getEmissionTrace
+      tags: [emissions]
+      summary: GHG traceability tree for one activity
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityId'
+      responses:
+        '200':
+          description: Trace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionTrace'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /emissions/{activityId}/override:
+    delete:
+      operationId: revertEmissionOverride
+      tags: [emissions]
+      summary: Revert the override and recalculate the activity
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityId'
+      responses:
+        '200':
+          description: Recalculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionRow'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: overrideEmission
+      tags: [emissions]
+      summary: Override the factor or result of one activity (reason required)
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideRequest'
+      responses:
+        '200':
+          description: Overridden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionRow'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /emissions/bulk-override:
+    post:
+      operationId: bulkOverrideEmissions
+      tags: [emissions]
+      summary: Apply one library factor to many activities
+      security:
+        - cookieAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOverrideRequest'
+      responses:
+        '200':
+          description: Overridden rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmissionRow'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     cookieAuth:
@@ -1028,6 +1330,54 @@ components:
       name: cg_session
       description: httpOnly session cookie set by logIn / verifyEmail / acceptInvitation.
   parameters:
+    ActivityId:
+      name: activityId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ScopeFilter:
+      name: scope
+      in: query
+      schema:
+        $ref: '#/components/schemas/Scope'
+    CategoryFilter:
+      name: categoryId
+      in: query
+      schema:
+        type: string
+        format: uuid
+    AdFilter:
+      name: activityDefinitionId
+      in: query
+      schema:
+        type: string
+        format: uuid
+    OrgUnitFilter:
+      name: orgUnitId
+      in: query
+      description: Business unit including all of its sub-units
+      schema:
+        type: string
+        format: uuid
+    StatusFilter:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/CalculationStatus'
+    FromFilter:
+      name: from
+      in: query
+      description: Period overlap start (inclusive)
+      schema:
+        $ref: '#/components/schemas/IsoDate'
+    ToFilter:
+      name: to
+      in: query
+      description: Period overlap end (inclusive)
+      schema:
+        $ref: '#/components/schemas/IsoDate'
     ActivityDefinitionId:
       name: activityDefinitionId
       in: path
@@ -1095,6 +1445,390 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    CalculationStatus:
+      type: string
+      enum: [matched, needs_review, unmatched, overridden]
+    CalculationMethod:
+      type: string
+      enum: [ai, search, override, none]
+    EmissionFactorSource:
+      type: object
+      additionalProperties: false
+      required: [id, code, publisher, name, version, year, licence, url, factorCount, importedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        publisher:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        year:
+          type: integer
+        licence:
+          type: string
+        url:
+          type: string
+        factorCount:
+          type: integer
+        importedAt:
+          type: string
+          format: date-time
+    EmissionFactor:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          sourceCode,
+          sourceName,
+          externalId,
+          name,
+          category,
+          scopeHint,
+          region,
+          year,
+          unit,
+          unitLabel,
+          co2ePerUnit,
+          co2PerUnit,
+          ch4PerUnit,
+          n2oPerUnit,
+          citationUrl,
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceCode:
+          type: string
+        sourceName:
+          type: string
+        externalId:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        scopeHint:
+          type: [integer, 'null']
+        region:
+          type: string
+        year:
+          type: integer
+        unit:
+          type: [string, 'null']
+        unitLabel:
+          type: string
+        co2ePerUnit:
+          type: number
+          description: kg CO2e per unit
+        co2PerUnit:
+          type: [number, 'null']
+        ch4PerUnit:
+          type: [number, 'null']
+        n2oPerUnit:
+          type: [number, 'null']
+        citationUrl:
+          type: string
+    FactorSearchHit:
+      type: object
+      additionalProperties: false
+      required: [factor, score]
+      properties:
+        factor:
+          $ref: '#/components/schemas/EmissionFactor'
+        score:
+          type: number
+    FactorRef:
+      type: object
+      additionalProperties: false
+      required: [id, name, sourceCode, unit, co2ePerUnit, region]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        sourceCode:
+          type: string
+        unit:
+          type: [string, 'null']
+        co2ePerUnit:
+          type: number
+        region:
+          type: string
+    EmissionRow:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          activityId,
+          activityDefinitionId,
+          activityDefinitionName,
+          scope,
+          categoryId,
+          categoryName,
+          orgUnitId,
+          orgUnitName,
+          description,
+          measure,
+          unit,
+          periodStart,
+          periodEnd,
+          factor,
+          method,
+          status,
+          confidence,
+          co2eKg,
+        ]
+      properties:
+        activityId:
+          type: string
+          format: uuid
+        activityDefinitionId:
+          type: string
+          format: uuid
+        activityDefinitionName:
+          type: string
+        scope:
+          $ref: '#/components/schemas/Scope'
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        orgUnitId:
+          type: [string, 'null']
+          format: uuid
+        orgUnitName:
+          type: [string, 'null']
+        description:
+          type: string
+        measure:
+          type: number
+        unit:
+          type: string
+        periodStart:
+          $ref: '#/components/schemas/IsoDate'
+        periodEnd:
+          $ref: '#/components/schemas/IsoDate'
+        factor:
+          oneOf:
+            - $ref: '#/components/schemas/FactorRef'
+            - type: 'null'
+        method:
+          $ref: '#/components/schemas/CalculationMethod'
+        status:
+          $ref: '#/components/schemas/CalculationStatus'
+        confidence:
+          type: [number, 'null']
+        co2eKg:
+          type: number
+    EmissionPage:
+      type: object
+      additionalProperties: false
+      required: [items, total, totalCo2eKg]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmissionRow'
+        total:
+          type: integer
+        totalCo2eKg:
+          type: number
+    ScopeTotals:
+      type: object
+      additionalProperties: false
+      required: ['1', '2', '3', total]
+      properties:
+        '1':
+          type: number
+        '2':
+          type: number
+        '3':
+          type: number
+        total:
+          type: number
+    EmissionSummary:
+      type: object
+      additionalProperties: false
+      required: [co2eKg, activityCount, needsReview, unmatched, overridden, orgUnitsWithData, orgUnitCount]
+      properties:
+        co2eKg:
+          $ref: '#/components/schemas/ScopeTotals'
+        activityCount:
+          type: integer
+        needsReview:
+          type: integer
+        unmatched:
+          type: integer
+        overridden:
+          type: integer
+        orgUnitsWithData:
+          type: integer
+        orgUnitCount:
+          type: integer
+    HeatmapGroupBy:
+      type: string
+      enum: [scope, category, activityDefinition, activity, orgUnit]
+    HeatmapRow:
+      type: object
+      additionalProperties: false
+      required: [key, label, total, cells]
+      properties:
+        key:
+          type: string
+          description: Id/value to filter on when drilling down
+        label:
+          type: string
+        total:
+          type: number
+        cells:
+          type: array
+          description: kg CO2e per column (pro-rated by days for multi-month periods)
+          items:
+            type: number
+    Heatmap:
+      type: object
+      additionalProperties: false
+      required: [groupBy, columns, rows, columnTotals, total]
+      properties:
+        groupBy:
+          $ref: '#/components/schemas/HeatmapGroupBy'
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeatmapRow'
+        columnTotals:
+          type: array
+          items:
+            type: number
+        total:
+          type: number
+    OrgEmissionNode:
+      type: object
+      additionalProperties: false
+      required: [orgUnitId, parentId, name, code, own, rollup]
+      properties:
+        orgUnitId:
+          type: string
+          format: uuid
+        parentId:
+          type: [string, 'null']
+          format: uuid
+        name:
+          type: string
+        code:
+          type: string
+        own:
+          $ref: '#/components/schemas/ScopeTotals'
+        rollup:
+          $ref: '#/components/schemas/ScopeTotals'
+    EmissionTrace:
+      type: object
+      description: Traceability tree — input row, classification, factor match (with alternatives), unit conversion, factor, result and overrides.
+      additionalProperties: true
+      required: [row, trace, overrides]
+      properties:
+        row:
+          $ref: '#/components/schemas/EmissionRow'
+        trace:
+          type: object
+          additionalProperties: true
+        overrides:
+          type: array
+          items:
+            $ref: '#/components/schemas/OverrideRecord'
+    OverrideRecord:
+      type: object
+      additionalProperties: false
+      required:
+        [id, type, factorId, value, unit, citation, reason, previousCo2eKg, newCo2eKg, createdBy, createdAt, revertedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [factor, custom_factor, custom_result]
+        factorId:
+          type: [string, 'null']
+          format: uuid
+        value:
+          type: [number, 'null']
+        unit:
+          type: [string, 'null']
+        citation:
+          type: [string, 'null']
+        reason:
+          type: string
+        previousCo2eKg:
+          type: [number, 'null']
+        newCo2eKg:
+          type: number
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        revertedAt:
+          type: [string, 'null']
+          format: date-time
+    OverrideRequest:
+      type: object
+      additionalProperties: false
+      required: [type, reason]
+      properties:
+        type:
+          type: string
+          enum: [factor, custom_factor, custom_result]
+        factorId:
+          type: string
+          format: uuid
+          description: Required for type=factor
+        value:
+          type: number
+          minimum: 0
+          description: kg CO2e per unit (custom_factor) or kg CO2e total (custom_result)
+        unit:
+          type: string
+          description: Unit of a custom factor
+        citation:
+          type: string
+          maxLength: 500
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+    BulkOverrideRequest:
+      type: object
+      additionalProperties: false
+      required: [activityIds, factorId, reason]
+      properties:
+        activityIds:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: string
+            format: uuid
+        factorId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
     Scope:
       type: integer
       enum: [1, 2, 3]
