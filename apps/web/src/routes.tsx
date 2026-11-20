@@ -10,6 +10,7 @@ import { ActivityDefinitionDetailContainer } from './containers/activity-definit
 import { ActivityDefinitionsContainer } from './containers/activity-definitions/ActivityDefinitionsContainer';
 import { DashboardContainer } from './containers/dashboard/DashboardContainer';
 import { EmissionFactorsContainer } from './containers/emissions/EmissionFactorsContainer';
+import { ReportsContainer } from './containers/reports/ReportsContainer';
 import { OrgUnitsContainer } from './containers/org-units/OrgUnitsContainer';
 import { OnboardingContainer } from './containers/onboarding/OnboardingContainer';
 import { PlatformTenantDetailContainer } from './containers/platform/PlatformTenantDetailContainer';
@@ -50,7 +51,7 @@ export const routes: RouteObject[] = [
           { path: 'activity-definitions', element: <ActivityDefinitionsContainer /> },
           { path: 'activity-definitions/:activityDefinitionId', element: <ActivityDefinitionDetailContainer /> },
           { path: 'emission-factors', element: <EmissionFactorsContainer /> },
-          { path: 'reports', element: soon('Reports', 'Country-format ESG reports.') },
+          { path: 'reports', element: <ReportsContainer /> },
           { path: 'assistant', element: soon('Assistant', 'Ask questions about your emissions.') },
           { path: 'settings', element: <SettingsContainer /> },
         ],

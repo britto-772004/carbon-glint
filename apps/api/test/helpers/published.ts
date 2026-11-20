@@ -43,15 +43,13 @@ export async function publishedScenario(ai = fakeAi()) {
       .expect(201);
   }
   const ad = (
-    await agent
-      .post('/api/activity-definitions')
-      .send({
-        name: 'Q1 ops',
-        scope: 1,
-        categoryId: SEED_CATEGORIES[0]!.id,
-        periodStart: '2026-01-01',
-        periodEnd: '2026-03-31',
-      })
+    await agent.post('/api/activity-definitions').send({
+      name: 'Q1 ops',
+      scope: 1,
+      categoryId: SEED_CATEGORIES[0]!.id,
+      periodStart: '2026-01-01',
+      periodEnd: '2026-03-31',
+    })
   ).body;
   const ds = (
     await agent
