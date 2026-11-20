@@ -436,6 +436,17 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
       countByOrgUnit: async (tenantId, orgUnitId) =>
         store.activities.filter((a) => a.tenantId === tenantId && a.orgUnitId === orgUnitId).length,
       findById: async (tenantId, id) => store.activities.find((a) => a.tenantId === tenantId && a.id === id) ?? null,
+      async deleteMany(tenantId, adId, ids) {
+        const gone = new Set(
+          store.activities
+            .filter((a) => a.tenantId === tenantId && a.activityDefinitionId === adId && ids.includes(a.id))
+            .map((a) => a.id),
+        );
+        store.activities = store.activities.filter((a) => !gone.has(a.id));
+        store.calculations = store.calculations.filter((c) => !gone.has(c.activityId));
+        store.efOverrides = store.efOverrides.filter((o) => !gone.has(o.activityId));
+        return gone.size;
+      },
     },
 
     emissionFactors: {
@@ -573,6 +584,17 @@ export function createMemoryRepositories(store: MemoryStore = createMemoryStore(
           (o) => o.tenantId === tenantId && o.activityId === activityId && !o.revertedAt,
         );
         for (const o of open) o.revertedAt = now();
+        return open.length;
+      },
+      async resetOverridesForDefinition(tenantId, adId) {
+        const ids = new Set(
+          store.activities.filter((a) => a.tenantId === tenantId && a.activityDefinitionId === adId).map((a) => a.id),
+        );
+        const open = store.efOverrides.filter((o) => o.tenantId === tenantId && ids.has(o.activityId) && !o.revertedAt);
+        for (const o of open) o.revertedAt = now();
+        store.calculations = store.calculations.filter(
+          (c) => !(c.tenantId === tenantId && c.activityDefinitionId === adId && c.status === 'overridden'),
+        );
         return open.length;
       },
       listByTenant: async (tenantId, filter) =>

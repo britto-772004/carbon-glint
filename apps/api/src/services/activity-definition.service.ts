@@ -15,6 +15,8 @@ export interface ActivityDefinitionService {
   remove(actor: Actor, id: string): Promise<void>;
   publish(actor: Actor, id: string): Promise<AD>;
   listActivities(actor: Actor, id: string, page: { limit: number; offset: number }): Promise<Schemas['ActivityPage']>;
+  deleteActivities(actor: Actor, id: string, activityIds: string[]): Promise<Schemas['DeleteActivitiesResult']>;
+  recalculate(actor: Actor, id: string, input: Schemas['RecalculateRequest']): Promise<AD>;
 }
 
 export const createActivityDefinitionService = ({
@@ -131,6 +133,26 @@ export const createActivityDefinitionService = ({
       await load(tenantId, id);
       const { items, total } = await repos.activities.listByDefinition(tenantId, id, page);
       return { items: items.map(toActivityDto), total };
+    },
+
+    async deleteActivities(actor, id, activityIds) {
+      const tenantId = requireTenantId(actor);
+      await load(tenantId, id);
+      const deleted = await repos.activities.deleteMany(tenantId, id, activityIds);
+      if (deleted > 0) await jobs.enqueue('assistant.index', { tenantId }, { delayMs: 60_000 });
+      return { deleted };
+    },
+
+    async recalculate(actor, id, input) {
+      const tenantId = requireTenantId(actor);
+      const row = await load(tenantId, id);
+      if (row.definition.status !== 'published') {
+        throw new BusinessRuleError('Publish the definition before recalculating.', { code: 'NOT_PUBLISHED' });
+      }
+      if (input.resetOverrides) await repos.calculations.resetOverridesForDefinition(tenantId, id);
+      await jobs.enqueue('calculation.run', { tenantId, activityDefinitionId: id });
+      await jobs.enqueue('assistant.index', { tenantId }, { delayMs: 60_000 });
+      return toActivityDefinitionDto(await load(tenantId, id));
     },
   };
 };

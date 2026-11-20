@@ -71,6 +71,22 @@ export const createActivityControllers = ({ taxonomy, activityDefinitions: ads, 
       next(err);
     }
   };
+  const deleteActivities: Controller<'deleteActivities'> = async (req, res, next) => {
+    try {
+      res
+        .status(200)
+        .json(await ads.deleteActivities(actorOf(req), req.params.activityDefinitionId, req.body.activityIds));
+    } catch (err) {
+      next(err);
+    }
+  };
+  const recalculateActivityDefinition: Controller<'recalculateActivityDefinition'> = async (req, res, next) => {
+    try {
+      res.status(202).json(await ads.recalculate(actorOf(req), req.params.activityDefinitionId, req.body ?? {}));
+    } catch (err) {
+      next(err);
+    }
+  };
   const uploadDataSource: Controller<'uploadDataSource'> = async (req, res, next) => {
     try {
       const file = (req.files as UploadedFile[] | undefined)?.[0];
@@ -147,6 +163,8 @@ export const createActivityControllers = ({ taxonomy, activityDefinitions: ads, 
     deleteActivityDefinition,
     publishActivityDefinition,
     listActivities,
+    deleteActivities,
+    recalculateActivityDefinition,
     uploadDataSource,
     getDataSource,
     updateDataSourceLayout,

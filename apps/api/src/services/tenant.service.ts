@@ -1,6 +1,7 @@
 import type { Schemas } from '@carbon-glint/api-spec';
 import { BusinessRuleError, ConflictError, ForbiddenError, NotFoundError } from '../errors/domain-errors.js';
 import type { ServiceDeps } from './index.js';
+import { normalizeLinkedinUrl } from '../lib/linkedin.js';
 import { ensureHeadquarters } from './org-unit.service.js';
 import { toIndustryDto, toTenantDto } from './mappers.js';
 import type { Actor } from './types.js';
@@ -36,6 +37,12 @@ export const createTenantService = ({ repositories: repos }: ServiceDeps): Tenan
       if (current.tenant.onboardedAt) {
         throw new ConflictError('Onboarding is already complete.', { code: 'ALREADY_ONBOARDED' });
       }
+      const linkedinUrl = normalizeLinkedinUrl(input.linkedinUrl);
+      if (linkedinUrl === undefined) {
+        throw new BusinessRuleError('That does not look like a LinkedIn page or profile URL.', {
+          code: 'INVALID_LINKEDIN_URL',
+        });
+      }
       const industry = await tx.industries.findById(input.industryId);
       if (!industry) throw new BusinessRuleError('Unknown industry.', { code: 'UNKNOWN_INDUSTRY' });
 
@@ -45,7 +52,7 @@ export const createTenantService = ({ repositories: repos }: ServiceDeps): Tenan
         employeeBand: input.employeeBand,
         businessUnitCount: input.businessUnitCount,
         website: input.website,
-        linkedinUrl: input.linkedinUrl,
+        linkedinUrl,
         onboardedAt: new Date(),
       });
       await ensureHeadquarters(tx, tenantId, updated!.name);

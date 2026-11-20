@@ -1,4 +1,4 @@
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { DbExecutor } from '../db/client.js';
 import { activities, type ActivityModel, type NewActivityModel } from '../models/index.js';
 
@@ -14,6 +14,8 @@ export interface ActivityRepository {
   allByDefinition(tenantId: string, adId: string): Promise<ActivityModel[]>;
   countByOrgUnit(tenantId: string, orgUnitId: string): Promise<number>;
   findById(tenantId: string, id: string): Promise<ActivityModel | null>;
+  /** Deletes the given activities of a definition (calculations and overrides cascade). Returns how many went. */
+  deleteMany(tenantId: string, adId: string, ids: string[]): Promise<number>;
 }
 
 const BATCH = 1000;
@@ -53,6 +55,16 @@ export const createActivityRepository = (db: DbExecutor): ActivityRepository => 
       .where(and(eq(activities.tenantId, tenantId), eq(activities.id, id)))
       .limit(1);
     return row ?? null;
+  },
+  async deleteMany(tenantId, adId, ids) {
+    if (ids.length === 0) return 0;
+    const rows = await db
+      .delete(activities)
+      .where(
+        and(eq(activities.tenantId, tenantId), eq(activities.activityDefinitionId, adId), inArray(activities.id, ids)),
+      )
+      .returning({ id: activities.id });
+    return rows.length;
   },
   async countByOrgUnit(tenantId, orgUnitId) {
     const [row] = await db

@@ -29,7 +29,6 @@ describe('tenant + onboarding HTTP API', () => {
   });
 
   it.each([
-    ['linkedinUrl', 'https://example.com/acme'],
     ['website', 'ftp://acme.com'],
     ['businessUnitCount', 0],
     ['employeeBand', '10-20'],
@@ -40,6 +39,39 @@ describe('tenant + onboarding HTTP API', () => {
       .put('/api/tenant/onboarding')
       .send({ ...onboarding, [field]: value })
       .expect(400);
+  });
+
+  it.each([
+    ['https://www.linkedin.com/in/hari-krishnan-14644216a/', 'https://www.linkedin.com/in/hari-krishnan-14644216a/'],
+    ['linkedin.com/in/hari-krishnan-14644216a', 'https://www.linkedin.com/in/hari-krishnan-14644216a/'],
+    ['https://in.linkedin.com/company/acme?trk=x', 'https://www.linkedin.com/company/acme/'],
+    ['', null],
+    [null, null],
+  ])('accepts LinkedIn %j (optional, normalised)', async (input, stored) => {
+    const t = createTestApp();
+    const { agent } = await signedInAdmin(t);
+    const res = await agent
+      .put('/api/tenant/onboarding')
+      .send({ ...onboarding, linkedinUrl: input })
+      .expect(200);
+    expect(res.body.linkedinUrl).toBe(stored);
+  });
+
+  it('accepts onboarding without a LinkedIn URL', async () => {
+    const t = createTestApp();
+    const { agent } = await signedInAdmin(t);
+    const { linkedinUrl: _omit, ...rest } = onboarding;
+    await agent.put('/api/tenant/onboarding').send(rest).expect(200);
+  });
+
+  it('422 for a non-LinkedIn URL', async () => {
+    const t = createTestApp();
+    const { agent } = await signedInAdmin(t);
+    const res = await agent
+      .put('/api/tenant/onboarding')
+      .send({ ...onboarding, linkedinUrl: 'https://example.com/acme' })
+      .expect(422);
+    expect(res.body.code).toBe('INVALID_LINKEDIN_URL');
   });
 
   it('422 for an unknown industry', async () => {

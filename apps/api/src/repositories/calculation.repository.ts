@@ -55,6 +55,8 @@ export interface CalculationRepository {
   createOverride(row: NewEfOverrideModel): Promise<EfOverrideModel>;
   listOverrides(tenantId: string, activityId: string): Promise<EfOverrideModel[]>;
   revertOverrides(tenantId: string, activityId: string): Promise<number>;
+  /** Reverts every open override of a definition and drops the overridden results so they get recalculated. */
+  resetOverridesForDefinition(tenantId: string, adId: string): Promise<number>;
 }
 
 const BATCH = 500;
@@ -187,6 +189,29 @@ export const createCalculationRepository = (db: DbExecutor): CalculationReposito
         and(eq(efOverrides.tenantId, tenantId), eq(efOverrides.activityId, activityId), isNull(efOverrides.revertedAt)),
       )
       .returning({ id: efOverrides.id });
+    return rows.length;
+  },
+  async resetOverridesForDefinition(tenantId, adId) {
+    const ids = db
+      .select({ id: activities.id })
+      .from(activities)
+      .where(and(eq(activities.tenantId, tenantId), eq(activities.activityDefinitionId, adId)));
+    const rows = await db
+      .update(efOverrides)
+      .set({ revertedAt: new Date() })
+      .where(
+        and(eq(efOverrides.tenantId, tenantId), isNull(efOverrides.revertedAt), inArray(efOverrides.activityId, ids)),
+      )
+      .returning({ id: efOverrides.id });
+    await db
+      .delete(calculations)
+      .where(
+        and(
+          eq(calculations.tenantId, tenantId),
+          eq(calculations.activityDefinitionId, adId),
+          eq(calculations.status, 'overridden'),
+        ),
+      );
     return rows.length;
   },
 });

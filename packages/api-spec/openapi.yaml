@@ -889,6 +889,60 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /activity-definitions/{activityDefinitionId}/activities/bulk-delete:
+    post:
+      operationId: deleteActivities
+      tags: [activities]
+      summary: Delete selected activity rows (their calculations go with them). Recalculate afterwards to refresh totals.
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteActivitiesRequest'
+      responses:
+        '200':
+          description: Number of rows deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteActivitiesResult'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /activity-definitions/{activityDefinitionId}/recalculate:
+    post:
+      operationId: recalculateActivityDefinition
+      tags: [activities]
+      summary: Re-run emission factor matching and CO2e calculation for every activity of a published definition
+      security:
+        - cookieAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ActivityDefinitionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecalculateRequest'
+      responses:
+        '202':
+          description: Recalculation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityDefinition'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
   /data-sources/{dataSourceId}:
     get:
       operationId: getDataSource
@@ -2592,6 +2646,35 @@ components:
           type: [number, 'null']
         currency:
           type: [string, 'null']
+    DeleteActivitiesRequest:
+      type: object
+      additionalProperties: false
+      required: [activityIds]
+      properties:
+        activityIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+    DeleteActivitiesResult:
+      type: object
+      additionalProperties: false
+      required: [deleted]
+      properties:
+        deleted:
+          type: integer
+          minimum: 0
+    RecalculateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        resetOverrides:
+          type: boolean
+          default: false
+          description: Also discard manual emission factor overrides and recalculate those rows from scratch.
     ActivityPage:
       type: object
       additionalProperties: false
@@ -2922,7 +3005,7 @@ components:
     OnboardingRequest:
       type: object
       additionalProperties: false
-      required: [companyName, industryId, employeeBand, businessUnitCount, website, linkedinUrl]
+      required: [companyName, industryId, employeeBand, businessUnitCount, website]
       properties:
         companyName:
           type: string
@@ -2943,10 +3026,9 @@ components:
           maxLength: 300
           pattern: '^https?://'
         linkedinUrl:
-          type: string
-          format: uri
+          description: Optional. A LinkedIn company, school or personal profile URL (scheme and www are optional).
+          type: [string, 'null']
           maxLength: 300
-          pattern: '^https://([a-z]{2,3}\.)?linkedin\.com/company/[^/]+/?.*$'
     Invitation:
       type: object
       additionalProperties: false
