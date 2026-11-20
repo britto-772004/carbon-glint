@@ -48,7 +48,7 @@ export function TenantDetailPanel({ detail, isLoading, error, onBack, ...actions
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
         <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
           <Button onClick={onBack}>← Companies</Button>
-          <Typography variant="h4" component="h1">
+          <Typography variant="h4" component="h2">
             {tenant.name}
           </Typography>
           <Chip label={tenant.status} color={active ? 'success' : 'default'} />

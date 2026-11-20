@@ -50,14 +50,9 @@ export function OrgUnitsPage(props: OrgUnitsPageProps) {
         spacing={2}
         sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' } }}
       >
-        <div>
-          <Typography variant="h4" component="h1">
-            Org Units
-          </Typography>
-          <Typography color="text.secondary">
-            {unitCount} business unit{unitCount === 1 ? '' : 's'} · drag a unit onto another to move it under it
-          </Typography>
-        </div>
+        <Typography variant="body2" color="text.secondary">
+          {unitCount} business unit{unitCount === 1 ? '' : 's'} · drag a unit onto another to move it under it
+        </Typography>
         <Stack direction="row" spacing={1}>
           <ToggleButtonGroup
             size="small"

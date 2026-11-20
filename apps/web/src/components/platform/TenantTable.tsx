@@ -31,10 +31,7 @@ export function TenantTable({ tenants, isLoading, error, query, onSearch, onOpen
   };
   return (
     <Stack spacing={2}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ justifyContent: 'space-between' }}>
-        <Typography variant="h4" component="h1">
-          Companies
-        </Typography>
+      <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
         <form onSubmit={submit}>
           <TextField name="q" size="small" label="Search name or domain" defaultValue={query} type="search" />
         </form>

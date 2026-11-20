@@ -9,6 +9,25 @@ import { toErrorMessage } from '../../lib/errors';
 import { useMe } from '../session/useMe';
 
 /** The assistant (ECharts + markdown) loads after the shell renders. */
+const NAV_OPEN_KEY = 'cg.sidebarOpen';
+
+/** Remembered per browser; storage may be unavailable (private mode), so default to open. */
+function readNavOpen(): boolean {
+  try {
+    return window.localStorage.getItem(NAV_OPEN_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+function writeNavOpen(open: boolean) {
+  try {
+    window.localStorage.setItem(NAV_OPEN_KEY, String(open));
+  } catch {
+    // ignore: the preference just won't persist
+  }
+}
+
 const AssistantLauncherContainer = lazy(() =>
   import('../assistant/AssistantLauncherContainer').then((m) => ({ default: m.AssistantLauncherContainer })),
 );
@@ -22,6 +41,7 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(readNavOpen);
   const [tourMenuOpen, setTourMenuOpen] = useState(false);
   const onTourMenu = useCallback((open: boolean) => setTourMenuOpen(open), []);
 
@@ -50,6 +70,15 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
       userEmail={me?.user.email ?? ''}
       tabs={tabs}
       activePath={active?.path ?? false}
+      pageTitle={active?.label}
+      pageSubtitle={active?.subtitle}
+      navOpen={navOpen}
+      onToggleNav={() =>
+        setNavOpen((o) => {
+          writeNavOpen(!o);
+          return !o;
+        })
+      }
       mobileNavOpen={mobileNavOpen}
       onToggleMobileNav={() => setMobileNavOpen((o) => !o)}
       onStartTour={variant === 'tenant' ? () => setTourMenuOpen(true) : undefined}

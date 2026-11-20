@@ -40,6 +40,25 @@ describe('session routing', () => {
   });
 });
 
+describe('app shell', () => {
+  it('shows the page title and subtitle in the top bar and lets the sidebar be hidden and shown again', async () => {
+    window.localStorage.removeItem('cg.sidebarOpen');
+    signIn(buildMe());
+    const { user } = renderApp('/app/dashboard');
+    const banner = await screen.findByRole('banner');
+    expect(within(banner).getByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    expect(within(banner).getByText(/carbon footprint at a glance/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Hide sidebar' }));
+    const show = await screen.findByRole('button', { name: 'Show sidebar' });
+    expect(window.localStorage.getItem('cg.sidebarOpen')).toBe('false');
+
+    await user.click(show);
+    expect(screen.queryByRole('button', { name: 'Show sidebar' })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem('cg.sidebarOpen')).toBe('true');
+  });
+});
+
 describe('login', () => {
   it('signs in and routes to onboarding for a new company', async () => {
     server.use(

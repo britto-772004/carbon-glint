@@ -7,7 +7,6 @@ import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 
 export interface AssistantPageProps {
   conversations: Conversation[];
@@ -20,14 +19,6 @@ export interface AssistantPageProps {
 export function AssistantPage({ conversations, activeId, onSelect, onNew, thread }: AssistantPageProps) {
   return (
     <Stack spacing={2}>
-      <div>
-        <Typography variant="h4" component="h1">
-          Assistant
-        </Typography>
-        <Typography color="text.secondary">
-          Ask anything about your company's emissions — answers are grounded in your data.
-        </Typography>
-      </div>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 3 }}>
           <Card>

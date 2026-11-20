@@ -5,7 +5,6 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import Typography from '@mui/material/Typography';
 
 export interface EmissionFactorsPageProps {
   sources: EmissionFactorSource[];
@@ -22,14 +21,6 @@ export interface EmissionFactorsPageProps {
 export function EmissionFactorsPage(p: EmissionFactorsPageProps) {
   return (
     <Stack spacing={2}>
-      <div>
-        <Typography variant="h4" component="h1">
-          Emission Factors
-        </Typography>
-        <Typography color="text.secondary">
-          How much each activity definition and activity emits — and which factor it came from.
-        </Typography>
-      </div>
       <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
         {p.sources.length === 0 ? (
           <Alert severity="warning">

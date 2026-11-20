@@ -2,10 +2,12 @@ import type { ReactNode } from 'react';
 import AccountTreeOutlined from '@mui/icons-material/AccountTreeOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import FactoryOutlined from '@mui/icons-material/FactoryOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import PlayCircleOutline from '@mui/icons-material/PlayCircleOutlined';
 import ScienceOutlined from '@mui/icons-material/ScienceOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
@@ -25,9 +27,10 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router';
-import { BrandMark } from '../common/BrandMark';
+import { BrandLogo, BrandMark } from '../common/BrandMark';
 import { ChangePasswordDialog, type ChangePasswordDialogProps } from './ChangePasswordDialog';
 
 export type NavIcon =
@@ -37,6 +40,8 @@ export interface ShellTab {
   label: string;
   path: string;
   icon: NavIcon;
+  /** One-line description shown under the page title in the top bar. */
+  subtitle?: string;
   /** Stable hook for the guided tour (`data-tour` attribute). */
   tourId?: string;
 }
@@ -61,6 +66,12 @@ export interface AppShellProps {
   userEmail: string;
   tabs: ShellTab[];
   activePath: string | false;
+  /** Title and subtitle of the current page, shown in the top bar. */
+  pageTitle?: string;
+  pageSubtitle?: string;
+  /** Desktop sidebar visibility (md and up). */
+  navOpen: boolean;
+  onToggleNav: () => void;
   mobileNavOpen: boolean;
   onToggleMobileNav: () => void;
   menuAnchor: HTMLElement | null;
@@ -85,11 +96,12 @@ export function AppShell(p: AppShellProps) {
     .slice(0, 2)
     .toUpperCase();
 
-  const nav = (
+  const nav = (closeButton: ReactNode) => (
     <Stack sx={{ height: '100%' }}>
-      <Box sx={{ px: 2.5, py: 2 }}>
+      <Stack direction="row" sx={{ px: 2.5, py: 2, alignItems: 'center', justifyContent: 'space-between' }}>
         <BrandMark />
-      </Box>
+        {closeButton}
+      </Stack>
       <Box sx={{ px: 2.5, pb: 1.5 }}>
         <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.4 }}>
           Workspace
@@ -147,7 +159,14 @@ export function AppShell(p: AppShellProps) {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Box component="aside" sx={{ width: { md: NAV_WIDTH }, flexShrink: { md: 0 } }}>
+      <Box
+        component="aside"
+        sx={{
+          width: { md: p.navOpen ? NAV_WIDTH : 0 },
+          flexShrink: { md: 0 },
+          transition: (t) => t.transitions.create('width', { duration: t.transitions.duration.shorter }),
+        }}
+      >
         <Drawer
           variant="temporary"
           open={p.mobileNavOpen}
@@ -155,17 +174,27 @@ export function AppShell(p: AppShellProps) {
           ModalProps={{ keepMounted: true }}
           sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { width: NAV_WIDTH } }}
         >
-          {nav}
+          {nav(
+            <IconButton aria-label="Close navigation" size="small" onClick={p.onToggleMobileNav}>
+              <ChevronLeft />
+            </IconButton>,
+          )}
         </Drawer>
         <Drawer
-          variant="permanent"
-          open
+          variant="persistent"
+          open={p.navOpen}
           sx={{
             display: { xs: 'none', md: 'block' },
             '& .MuiDrawer-paper': { width: NAV_WIDTH, boxSizing: 'border-box', borderRight: 1, borderColor: 'divider' },
           }}
         >
-          {nav}
+          {nav(
+            <Tooltip title="Hide sidebar">
+              <IconButton aria-label="Hide sidebar" size="small" onClick={p.onToggleNav}>
+                <ChevronLeft />
+              </IconButton>
+            </Tooltip>,
+          )}
         </Drawer>
       </Box>
 
@@ -176,7 +205,7 @@ export function AppShell(p: AppShellProps) {
           elevation={0}
           sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}
         >
-          <Toolbar variant="dense" sx={{ gap: 1, minHeight: 56 }}>
+          <Toolbar sx={{ gap: 1.5, minHeight: { xs: 60, md: 64 }, px: { xs: 2, md: 3 } }}>
             <IconButton
               aria-label="Open navigation"
               onClick={p.onToggleMobileNav}
@@ -185,11 +214,36 @@ export function AppShell(p: AppShellProps) {
             >
               <MenuIcon />
             </IconButton>
-            <Box sx={{ display: { md: 'none' } }}>
-              <BrandMark size={26} />
+            {!p.navOpen && (
+              <Stack direction="row" spacing={1} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+                <Tooltip title="Show sidebar">
+                  <IconButton aria-label="Show sidebar" onClick={p.onToggleNav} edge="start">
+                    <MenuOpenIcon sx={{ transform: 'scaleX(-1)' }} />
+                  </IconButton>
+                </Tooltip>
+                <BrandLogo size={28} />
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+              </Stack>
+            )}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              {p.pageTitle && (
+                <Typography variant="h6" component="h1" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                  {p.pageTitle}
+                </Typography>
+              )}
+              {p.pageSubtitle && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  noWrap
+                  title={p.pageSubtitle}
+                  sx={{ display: { xs: 'none', sm: 'block' } }}
+                >
+                  {p.pageSubtitle}
+                </Typography>
+              )}
             </Box>
-            <Box sx={{ flex: 1 }} />
-            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', lg: 'block' } }}>
               {p.userName}
             </Typography>
             <IconButton aria-label="Account menu" onClick={(e) => p.onOpenMenu(e.currentTarget)}>

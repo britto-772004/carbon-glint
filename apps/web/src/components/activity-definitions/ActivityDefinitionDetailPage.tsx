@@ -79,7 +79,7 @@ export function ActivityDefinitionDetailPage(p: ActivityDefinitionDetailPageProp
             ← Activity Definitions
           </Button>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-            <Typography variant="h4" component="h1">
+            <Typography variant="h4" component="h2">
               {d.name}
             </Typography>
             <Chip label={d.status} color={d.status === 'published' ? 'success' : 'default'} />

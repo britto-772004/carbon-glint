@@ -50,14 +50,6 @@ export function ReportsPage(p: ReportsPageProps) {
   const hq = p.orgUnits.find((u) => u.type === 'hq') ?? p.orgUnits[0];
   return (
     <Stack spacing={3}>
-      <div>
-        <Typography variant="h4" component="h1">
-          Reports
-        </Typography>
-        <Typography color="text.secondary">
-          Export an ESG / GHG report for a business unit in your country's format.
-        </Typography>
-      </div>
       <Card>
         <CardHeader title="Generate a report" subheader="The PDF is built in the background — usually a few seconds." />
         <CardContent>

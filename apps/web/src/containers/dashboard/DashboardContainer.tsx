@@ -27,10 +27,8 @@ import {
   type GroupMode,
 } from '../../lib/drill';
 import { layoutTree } from '../../lib/org-tree';
-import { useMe } from '../session/useMe';
 
 export function DashboardContainer() {
-  const { me } = useMe();
   const [filters, setFilters] = useState<EmissionFilterValues>({});
   const [mode, setMode] = useState<GroupMode>('ghg');
   const [path, setPath] = useState<DrillStep[]>([]);
@@ -100,7 +98,6 @@ export function DashboardContainer() {
 
   return (
     <DashboardPage
-      title={`${me?.tenant?.name ?? 'Your company'} — carbon footprint overview`}
       filters={
         <EmissionFiltersBar
           values={filters}

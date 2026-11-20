@@ -39,19 +39,7 @@ export function ActivityDefinitionsPage(props: ActivityDefinitionsPageProps) {
   const { definitions, isLoading, error } = props;
   return (
     <Stack spacing={2}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' } }}
-      >
-        <div>
-          <Typography variant="h4" component="h1">
-            Activity Definitions
-          </Typography>
-          <Typography color="text.secondary">
-            Classify emission sources by scope and GHG category, then upload their data.
-          </Typography>
-        </div>
+      <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
         <Button variant="contained" onClick={props.onCreate} data-tour="ad-new">
           New activity definition
         </Button>
