@@ -120,3 +120,23 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Azure AI Foundry endpoint', () => {
+  it('sends the api-key header for Azure hosts only', async () => {
+    const { createOpenAiClient } = await import('../../../src/lib/ai/openai.js');
+    const seen: Array<Record<string, string>> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_u: string, init: { headers: Record<string, string> }) => {
+        seen.push(init.headers);
+        return new Response(JSON.stringify({ choices: [{ message: { content: 'hi' } }] }), { status: 200 });
+      }),
+    );
+    const make = (baseUrl: string) => createOpenAiClient({ apiKey: 'k', model: 'dep', embeddingModel: 'emb', baseUrl });
+    await make('https://myres.openai.azure.com/openai/v1').generateText('x');
+    await make('https://api.openai.com/v1').generateText('x');
+    expect(seen[0]!['api-key']).toBe('k');
+    expect(seen[1]!['api-key']).toBeUndefined();
+    vi.unstubAllGlobals();
+  });
+});

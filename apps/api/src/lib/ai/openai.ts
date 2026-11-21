@@ -13,12 +13,18 @@ type ChatMessage = Record<string, unknown>;
 /** OpenAI (and OpenAI-compatible) client over the REST API — no SDK dependency. */
 export function createOpenAiClient({ apiKey, model, embeddingModel, baseUrl }: OpenAiOptions): AiClient {
   const root = baseUrl.replace(/\/+$/, '');
+  const isAzure = /\.(openai\.azure\.com|services\.ai\.azure\.com|cognitiveservices\.azure\.com)(:|\/|$)/i.test(root);
 
   const post = async <T>(path: string, body: Record<string, unknown>): Promise<T> => {
     if (!apiKey) throw new Error('OPENAI_API_KEY is not configured');
     const res = await fetch(`${root}${path}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+        // Azure OpenAI / AI Foundry authenticate API keys with this header instead of Bearer.
+        ...(isAzure ? { 'api-key': apiKey } : {}),
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(60_000),
     });
