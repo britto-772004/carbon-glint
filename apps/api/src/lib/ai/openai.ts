@@ -6,18 +6,29 @@ export interface OpenAiOptions {
   embeddingModel: string;
   /** Override for OpenAI-compatible servers (Azure, OpenRouter, vLLM, Ollama…). */
   baseUrl: string;
+  /** Embeddings endpoint, when different from `baseUrl`. */
+  embeddingBaseUrl?: string;
 }
 
 type ChatMessage = Record<string, unknown>;
 
 /** OpenAI (and OpenAI-compatible) client over the REST API — no SDK dependency. */
-export function createOpenAiClient({ apiKey, model, embeddingModel, baseUrl }: OpenAiOptions): AiClient {
-  const root = baseUrl.replace(/\/+$/, '');
-  const isAzure = /\.(openai\.azure\.com|services\.ai\.azure\.com|cognitiveservices\.azure\.com)(:|\/|$)/i.test(root);
+export function createOpenAiClient({
+  apiKey,
+  model,
+  embeddingModel,
+  baseUrl,
+  embeddingBaseUrl,
+}: OpenAiOptions): AiClient {
+  const trim = (u: string) => u.trim().replace(/\/+$/, '');
+  const root = trim(baseUrl);
+  const embeddingRoot = embeddingBaseUrl ? trim(embeddingBaseUrl) : root;
+  const AZURE = /\.(openai\.azure\.com|services\.ai\.azure\.com|cognitiveservices\.azure\.com)(:|\/|$)/i;
 
-  const post = async <T>(path: string, body: Record<string, unknown>): Promise<T> => {
+  const post = async <T>(path: string, body: Record<string, unknown>, base = root): Promise<T> => {
     if (!apiKey) throw new Error('OPENAI_API_KEY is not configured');
-    const res = await fetch(`${root}${path}`, {
+    const isAzure = AZURE.test(base);
+    const res = await fetch(`${base}${path}`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -88,11 +99,16 @@ export function createOpenAiClient({ apiKey, model, embeddingModel, baseUrl }: O
     async embed(texts) {
       const out: number[][] = [];
       for (let i = 0; i < texts.length; i += 100) {
-        const res = await post<{ data: Array<{ index: number; embedding: number[] }> }>('/embeddings', {
-          model: embeddingModel,
-          input: texts.slice(i, i + 100),
-          dimensions: EMBEDDING_DIMENSIONS,
-        });
+        const res = await post<{ data: Array<{ index: number; embedding: number[] }> }>(
+          '/embeddings',
+          {
+            model: embeddingModel,
+            input: texts.slice(i, i + 100),
+            dimensions: EMBEDDING_DIMENSIONS,
+            encoding_format: 'float',
+          },
+          embeddingRoot,
+        );
         out.push(...[...res.data].sort((a, b) => a.index - b.index).map((d) => d.embedding));
       }
       return out;

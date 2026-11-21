@@ -169,3 +169,38 @@ describe('reasoning models', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('separate embeddings endpoint', () => {
+  it('sends chat and embeddings to their own base URLs', async () => {
+    const { createOpenAiClient } = await import('../../../src/lib/ai/openai.js');
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (u: string) => {
+        urls.push(u);
+        return new Response(
+          JSON.stringify(
+            u.endsWith('/embeddings')
+              ? { data: [{ index: 0, embedding: [0.1] }] }
+              : { choices: [{ message: { content: 'hi' } }] },
+          ),
+          { status: 200 },
+        );
+      }),
+    );
+    const ai = createOpenAiClient({
+      apiKey: 'k',
+      model: 'gpt-5-mini',
+      embeddingModel: 'text-embedding-3-small',
+      baseUrl: 'https://a.cognitiveservices.azure.com/openai/v1/',
+      embeddingBaseUrl: 'https://b.cognitiveservices.azure.com/openai/v1',
+    });
+    await ai.generateText('x');
+    await ai.embed(['x'], 'RETRIEVAL_QUERY');
+    expect(urls).toEqual([
+      'https://a.cognitiveservices.azure.com/openai/v1/chat/completions',
+      'https://b.cognitiveservices.azure.com/openai/v1/embeddings',
+    ]);
+    vi.unstubAllGlobals();
+  });
+});

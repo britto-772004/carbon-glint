@@ -45,6 +45,7 @@ const values = {
   OPENAI_MODEL: env.OPENAI_MODEL || 'gpt-4o-mini',
   OPENAI_EMBEDDING_MODEL: env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
   OPENAI_BASE_URL: env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+  OPENAI_EMBEDDING_BASE_URL: env.OPENAI_EMBEDDING_BASE_URL ?? '',
   SMTP_HOST: env.SMTP_HOST ?? '',
   SMTP_PORT: env.SMTP_PORT || '587',
   SMTP_USER: env.SMTP_USER ?? '',

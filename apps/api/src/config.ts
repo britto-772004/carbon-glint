@@ -43,6 +43,8 @@ const EnvSchema = z.object({
   OPENAI_EMBEDDING_MODEL: optional(z.string().min(1).default('text-embedding-3-small')),
   /** Point at any OpenAI-compatible server (Azure, OpenRouter, vLLM, Ollama…). */
   OPENAI_BASE_URL: optional(z.url().default('https://api.openai.com/v1')),
+  /** Embeddings endpoint when it differs from the chat one (e.g. another Azure resource). Defaults to OPENAI_BASE_URL. */
+  OPENAI_EMBEDDING_BASE_URL: optional(z.url().optional()),
   /** Comma-separated list of allowed origins. Empty = same-origin only (Firebase Hosting rewrite). */
   CORS_ORIGINS: z
     .string()

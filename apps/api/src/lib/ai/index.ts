@@ -45,6 +45,7 @@ function createProviderClient(config: Config): AiClient {
         model: config.LLM_MODEL ?? config.OPENAI_MODEL,
         embeddingModel: config.OPENAI_EMBEDDING_MODEL,
         baseUrl: config.OPENAI_BASE_URL,
+        embeddingBaseUrl: config.OPENAI_EMBEDDING_BASE_URL,
       });
     case 'gemini':
     default:
