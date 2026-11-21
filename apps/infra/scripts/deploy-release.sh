@@ -56,7 +56,12 @@ log "Ensuring emission factor library"
 log "Activating release"
 ln -sfn "$RELEASE_DIR" "$APP_DIR/current"
 
+DOMAIN="$(envval DOMAIN)"
 sudo install -m 644 "$RELEASE_DIR/Caddyfile" /etc/caddy/Caddyfile
+if [ -n "$DOMAIN" ]; then
+  # Own domain: Caddy gets a Let's Encrypt certificate and redirects HTTP to HTTPS for that name.
+  printf '\n%s {\n\timport app\n}\n' "$DOMAIN" | sudo tee -a /etc/caddy/Caddyfile >/dev/null
+fi
 # Validate as the caddy user: validating as root creates /var/log/caddy/access.log owned by root,
 # which the caddy service then can't open (reload fails with "opening log writer").
 sudo install -d -o caddy -g caddy /var/log/caddy

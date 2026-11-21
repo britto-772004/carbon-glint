@@ -1,5 +1,7 @@
-# Installed to /etc/caddy/Caddyfile on every deploy. TLS is terminated by Cloudflare Tunnel,
-# so Caddy only listens on plain HTTP (localhost via the tunnel, or the VM IP if port 80 is opened).
+# Installed to /etc/caddy/Caddyfile on every deploy.
+# :80 serves plain HTTP (localhost via the Cloudflare Tunnel, health checks, or the VM IP).
+# When DOMAIN is set, deploy-release.sh appends a site block for it, and Caddy obtains and renews
+# a Let's Encrypt certificate by itself (ports 80 and 443 must be open to the internet).
 {
 	admin localhost:2019
 	servers {
@@ -7,7 +9,7 @@
 	}
 }
 
-:80 {
+(app) {
 	encode zstd gzip
 
 	handle /api/* {
@@ -28,4 +30,8 @@
 			roll_keep 5
 		}
 	}
+}
+
+:80 {
+	import app
 }

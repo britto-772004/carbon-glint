@@ -32,6 +32,7 @@ const values = {
   LOG_LEVEL: 'info',
   APP_VERSION: env.RELEASE_ID ?? env.GITHUB_SHA ?? 'unknown',
   APP_URL: env.APP_URL || 'http://localhost',
+  DOMAIN: env.DOMAIN ?? '',
   POSTGRES_PASSWORD: env.POSTGRES_PASSWORD,
   DATABASE_URL: `postgres://carbon:${encodeURIComponent(env.POSTGRES_PASSWORD)}@127.0.0.1:5432/carbon_glint`,
   REDIS_URL: 'redis://127.0.0.1:6379',

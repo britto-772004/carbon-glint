@@ -63,7 +63,7 @@ variable "ssh_allowed_cidrs" {
 }
 
 variable "public_http" {
-  description = "Also open port 80 on the VM's IP (plain HTTP). Not needed with Cloudflare Tunnel."
+  description = "Also open ports 80 and 443 on the VM's IP. Needed to serve your own domain with HTTPS (Caddy + Let's Encrypt); not needed with Cloudflare Tunnel."
   type        = bool
   default     = false
 }
