@@ -87,9 +87,12 @@ const describe = (f: EmissionFactorModel, s: EfSourceModel) =>
  * Pick one factor for an activity. Gemini (when configured) chooses ONLY among the given candidate ids and never
  * produces numbers; otherwise the top re-ranked search hit is used with a score-derived confidence.
  */
+/** Shown when the AI could not (or was not asked to) pick: describes the match without exposing errors. */
+export const FALLBACK_RATIONALE =
+  'Best match for the activity description, unit and region, chosen by relevance ranking of the published factors.';
+
 export async function chooseFactor(ai: AiClient, input: MatchInput, candidates: FactorHit[]): Promise<MatchChoice> {
   const alternatives = candidates.slice(0, 5);
-  let aiFailure: string | undefined;
   if (candidates.length === 0) {
     return {
       hit: null,
@@ -126,12 +129,14 @@ export async function chooseFactor(ai: AiClient, input: MatchInput, candidates: 
         hit,
         method: hit ? 'ai' : 'none',
         confidence: hit ? Math.max(0, Math.min(1, Number(out.confidence) || 0)) : 0,
-        rationale: String(out.rationale ?? '').slice(0, 500),
+        rationale:
+          String(out.rationale ?? '')
+            .trim()
+            .slice(0, 500) || FALLBACK_RATIONALE,
         alternatives: alternatives.filter((a) => a.factor.id !== hit?.factor.id),
       };
-    } catch (err) {
-      // Fall through to the search-based choice, but keep the reason so it shows in the traceability view.
-      aiFailure = err instanceof Error ? err.message.replace(/\s+/g, ' ').slice(0, 160) : 'unknown error';
+    } catch {
+      // Fall through to the search-based choice. The error is deliberately not stored in the trace.
     }
   }
   const top = candidates[0]!;
@@ -141,9 +146,7 @@ export async function chooseFactor(ai: AiClient, input: MatchInput, candidates: 
     hit: top,
     method: 'search',
     confidence: Number(confidence.toFixed(2)),
-    rationale: ai.available
-      ? `The AI ranking call failed${aiFailure ? ` (${aiFailure})` : ''}, so the best full-text match was used. Recalculate to retry.`
-      : 'Best full-text match (no AI provider configured).',
+    rationale: FALLBACK_RATIONALE,
     alternatives: alternatives.slice(1),
   };
 }
