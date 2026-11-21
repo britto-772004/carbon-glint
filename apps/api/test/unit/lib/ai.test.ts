@@ -140,3 +140,32 @@ describe('Azure AI Foundry endpoint', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('reasoning models', () => {
+  it('retries without temperature when the model rejects it', async () => {
+    const { createOpenAiClient } = await import('../../../src/lib/ai/openai.js');
+    const bodies: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_u: string, init: { body: string }) => {
+        const body = JSON.parse(init.body) as Record<string, unknown>;
+        bodies.push(body);
+        if ('temperature' in body)
+          return new Response('{"error":{"message":"Unsupported value: temperature does not support 0"}}', {
+            status: 400,
+          });
+        return new Response(JSON.stringify({ choices: [{ message: { content: '{"a":1}' } }] }), { status: 200 });
+      }),
+    );
+    const ai = createOpenAiClient({
+      apiKey: 'k',
+      model: 'my-deployment',
+      embeddingModel: 'e',
+      baseUrl: 'https://x.openai.azure.com/openai/v1',
+    });
+    expect(await ai.generateJson('x', {})).toEqual({ a: 1 });
+    await ai.generateJson('y', {});
+    expect(bodies.map((b) => 'temperature' in b)).toEqual([true, false, false]);
+    vi.unstubAllGlobals();
+  });
+});

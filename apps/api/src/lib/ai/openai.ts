@@ -33,7 +33,22 @@ export function createOpenAiClient({ apiKey, model, embeddingModel, baseUrl }: O
     return JSON.parse(text) as T;
   };
 
-  const chat = (messages: ChatMessage[], extra: Record<string, unknown> = {}) =>
+  // Reasoning models (gpt-5, o-series) accept only the default temperature; drop it once we learn that.
+  let noTemperature = /^(gpt-5|o\d)/i.test(model);
+  const chat = async (messages: ChatMessage[], extra: Record<string, unknown> = {}) => {
+    const send = (body: Record<string, unknown>) => chatRaw(messages, body);
+    const strip = ({ temperature: _t, ...rest }: Record<string, unknown>) => rest;
+    try {
+      return await send(noTemperature ? strip(extra) : extra);
+    } catch (err) {
+      if (!noTemperature && 'temperature' in extra && /temperature/i.test(String(err))) {
+        noTemperature = true;
+        return await send(strip(extra));
+      }
+      throw err;
+    }
+  };
+  const chatRaw = (messages: ChatMessage[], extra: Record<string, unknown>) =>
     post<{
       choices: Array<{
         message: {
