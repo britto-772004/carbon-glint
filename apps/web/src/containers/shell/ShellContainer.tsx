@@ -7,6 +7,7 @@ import { PLATFORM_TABS, TENANT_TABS } from './tabs';
 import { TourContainer } from '../tour/TourContainer';
 import { toErrorMessage } from '../../lib/errors';
 import { useMe } from '../session/useMe';
+import { isDemoMode } from '../../demo/session';
 
 /** The assistant (ECharts + markdown) loads after the shell renders. */
 const NAV_OPEN_KEY = 'cg.sidebarOpen';
@@ -91,6 +92,7 @@ export function ShellContainer({ variant }: { variant: 'tenant' | 'platform' }) 
         changePassword.reset();
         setDialogOpen(true);
       }}
+      isDemo={isDemoMode()}
       showTemporaryPasswordBanner={Boolean(me?.user.passwordIsTemporary)}
       floating={
         variant === 'tenant' ? (

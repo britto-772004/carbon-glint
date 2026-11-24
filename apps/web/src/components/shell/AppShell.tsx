@@ -82,6 +82,8 @@ export interface AppShellProps {
   /** Shows the "Guided tour" entry when provided. */
   onStartTour?: () => void;
   showTemporaryPasswordBanner: boolean;
+  /** Demo mode: sample data held in the browser only. */
+  isDemo?: boolean;
   changePassword: ChangePasswordDialogProps;
   /** Optional floating widgets (AI assistant launcher, guided tour). */
   floating?: ReactNode;
@@ -259,6 +261,19 @@ export function AppShell(p: AppShellProps) {
             </Menu>
           </Toolbar>
         </AppBar>
+        {p.isDemo && (
+          <Alert
+            severity="info"
+            square
+            action={
+              <Button color="inherit" size="small" onClick={p.onLogout}>
+                Exit demo
+              </Button>
+            }
+          >
+            You&apos;re exploring the demo with sample data. Changes aren&apos;t saved and reset when you leave.
+          </Alert>
+        )}
         {p.showTemporaryPasswordBanner && (
           <Alert
             severity="warning"

@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -19,6 +20,8 @@ export interface LoginFormProps {
   onResendVerification: () => void;
   resendSent: boolean;
   notice?: string;
+  /** Start the no-signup sample-data demo. */
+  onDemo?: () => void;
 }
 
 export function LoginForm({
@@ -29,6 +32,7 @@ export function LoginForm({
   onResendVerification,
   resendSent,
   notice,
+  onDemo,
 }: LoginFormProps) {
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -73,6 +77,17 @@ export function LoginForm({
         <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ alignSelf: 'center' }}>
           Forgot password?
         </Link>
+        {onDemo && (
+          <>
+            <Divider>or</Divider>
+            <Button variant="outlined" size="large" onClick={onDemo}>
+              Try the live demo
+            </Button>
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+              No sign-up. Explore a sample company with data under every scope. Stored only in your browser.
+            </Typography>
+          </>
+        )}
       </Stack>
     </AuthLayout>
   );
