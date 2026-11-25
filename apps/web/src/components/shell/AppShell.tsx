@@ -287,7 +287,10 @@ export function AppShell(p: AppShellProps) {
             You signed in with an emailed password. Please choose a new one.
           </Alert>
         )}
-        <Box component="main" sx={{ flex: 1, px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 }, minWidth: 0 }}>
+        <Box
+          component="main"
+          sx={{ flex: 1, px: { xs: 2, md: 3 }, pt: { xs: 2, md: 3 }, pb: { xs: 10, md: 3 }, minWidth: 0 }}
+        >
           <Stack spacing={3}>{p.children}</Stack>
         </Box>
       </Box>

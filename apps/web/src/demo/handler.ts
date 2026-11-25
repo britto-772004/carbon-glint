@@ -228,7 +228,11 @@ type Ctx = { s: DemoState; q: URLSearchParams; body: any; m: RegExpMatchArray; r
 type Route = [method: string, pattern: RegExp, fn: (c: Ctx) => Response | Promise<Response>];
 
 const ROUTES: Route[] = [
-  ['GET', /^\/health$/, () => json({ status: 'ok' })],
+  [
+    'GET',
+    /^\/health$/,
+    () => json({ status: 'ok', version: 'demo', uptimeSeconds: 0, checks: { database: 'up', redis: 'up' } }),
+  ],
   ['POST', /^\/auth\/logout$/, () => (setDemoMode(false), resetDemoStore(), empty())],
   ['GET', /^\/me$/, ({ s }) => json({ user: s.user, tenant: s.tenant })],
   ['GET', /^\/industries$/, ({ s }) => json(s.industries)],
