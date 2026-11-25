@@ -8,6 +8,20 @@ export const registerDemoReportUrl = (reportId: string, url: string) => urls.set
 export const hasDemoReportUrl = (reportId: string) => urls.has(reportId);
 export const demoReportUrl = (reportId: string): string => urls.get(reportId) ?? '#';
 
+/** Waits for the in-browser PDF to finish building, then saves it (a plain href goes stale: the blob URL is created after render). */
+export async function downloadDemoReport(reportId: string, fileName: string): Promise<boolean> {
+  for (let i = 0; i < 100 && !urls.has(reportId); i++) await new Promise((r) => setTimeout(r, 100));
+  const url = urls.get(reportId);
+  if (!url) return false;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  return true;
+}
+
 const TEMPLATE_CSV = [
   'Activity Description,Location,Measure,Unit,Period Start,Period End,Spend,Currency',
   'Grid electricity - office,"Bengaluru, IN",18450,kWh,2026-01-01,2026-03-31,166050,INR',

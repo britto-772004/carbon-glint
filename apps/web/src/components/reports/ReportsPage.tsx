@@ -24,6 +24,8 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { formValues } from '../../lib/errors';
+import { downloadDemoReport } from '../../demo/blobs';
+import { isDemoMode } from '../../demo/session';
 import { reportDownloadUrl } from '../../lib/api-urls';
 import type { Pagination } from '../../lib/pagination';
 import { TablePager } from '../common/TablePager';
@@ -252,6 +254,14 @@ export function ReportsPage(p: ReportsPageProps) {
                                 size="small"
                                 variant="outlined"
                                 href={reportDownloadUrl(r.id)}
+                                onClick={(e) => {
+                                  if (!isDemoMode()) return;
+                                  e.preventDefault();
+                                  void downloadDemoReport(
+                                    r.id,
+                                    `${r.formatName} - ${r.orgUnitName}.pdf`.replace(/[\\/:*?"<>|]/g, '-'),
+                                  );
+                                }}
                                 startIcon={<DownloadRounded fontSize="small" />}
                               >
                                 Download PDF
